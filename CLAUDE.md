@@ -47,9 +47,3 @@ tonight's design discussion:
   typing indicators, read receipts, "online now" badges, or anything else
   that nudges someone toward an immediate response, unless I explicitly ask
   for it.
-- **A dependency earns its place.** Prefer Node's standard library. `marked`
-  is in because hand-rolling a markdown renderer under deadline pressure
-  wasn't a good trade; the next one needs the same kind of stated reason.
-- **Keep the schema small.** Start from the smallest data shape that carries
-  the current crit's core interaction; extend it when a real requirement
-  shows up, not ahead of one.
