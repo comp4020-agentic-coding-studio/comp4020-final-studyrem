@@ -1,18 +1,23 @@
 # syntax = docker/dockerfile:1
 
-# A placeholder, and yours to replace: it serves one page, plus README.md
-# verbatim at /readme/, which is enough to prove the deploy path end to end.
-# Whatever your app is built with, the image that replaces this one must serve
-# HTTP on 0.0.0.0:$PORT (fly.toml sets PORT) and publish README.md at /readme/
-# (spec/README.md says what's checked).
+# Plain node:http, no framework — the one runtime dependency (marked, for
+# /readme/) is installed from the committed lockfile so the image matches
+# what pnpm resolved locally. fly.toml fixes the rest of the shape: one
+# machine, one volume at /data, HTTP on 0.0.0.0:$PORT.
+FROM node:24-slim
 
-FROM docker.io/library/busybox:1.38.0
-COPY placeholder/ /src/
-COPY README.md /src/
-# README.md goes into the page as-is, HTML-escaped, in place of @README@;
-# rendering it properly is your app's job
-RUN mkdir -p /site/readme \
-    && cp /src/index.html /site/ \
-    && sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' /src/README.md > /src/body \
-    && sed -e '/@README@/{r /src/body' -e 'd}' /src/readme.html > /site/readme/index.html
-CMD ["sh", "-c", "exec httpd -f -p 0.0.0.0:${PORT:-8080} -h /site"]
+WORKDIR /app
+
+# Install deps before copying source so this layer only rebuilds when
+# package.json/the lockfile change, not on every code edit.
+COPY package.json pnpm-lock.yaml ./
+RUN npm install --global pnpm@11.17.0 \
+    && pnpm install --frozen-lockfile --prod
+
+COPY src ./src
+COPY README.md ./
+
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["node", "src/server.ts"]
