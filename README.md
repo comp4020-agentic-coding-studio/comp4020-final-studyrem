@@ -56,11 +56,6 @@ real-time layer, and polish are explicitly next, not now.
 
 ## What shaped this
 
-- Robin Sloan, ["An app can be a home-cooked meal"](https://www.robinsloan.com/notes/home-cooked-app/) —
-  software built for a specific, small, known group of people, not for growth.
-- Aral Balkan, ["What is the Small Web?"](https://ar.al/2020/08/07/what-is-the-small-web/) —
-  naming what this is reacting against: platforms that grow by watching
-  everybody and trusting nobody.
 - Amber Case / Mark Weiser's **calm technology** — the suggestion mechanism
   (not yet built) is designed to sit at the edge of attention, not demand a
   response.
