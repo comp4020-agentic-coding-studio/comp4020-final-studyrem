@@ -50,9 +50,18 @@ as an unrelated pile of safety features.
   general, honours the audience or just borrows its legitimacy. We're
   watching for the difference.
 
-At this stage (crit 8) only the single-profile core and persistence exist —
-no matching, search, suggestions, or live updates yet. The feature list, the
-real-time layer, and polish are explicitly next, not now.
+**Current state (crit 9), and where it falls short of the above.** You now log
+in and edit your own profile — add a field, or remove one. You can make a
+share link; anyone holding it sees your profile read-only, and it updates live,
+without a reload, when you change it. Regenerating the link ends the old one.
+
+That share link shows your **whole** profile to whoever holds it. That breaks
+the first enforced rule above — a viewer seeing only the fields they've added
+themselves — and it's a deliberate, temporary choice: we built the real-time,
+multi-user skeleton first, and the mutual-field rule is the next thing to put
+back on top of it, not something we've given up. Until then, the only
+protection is that nobody can reach your profile without a link you chose to
+make and send. Matching, search and suggestions don't exist yet either.
 
 ## What shaped this
 

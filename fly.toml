@@ -17,6 +17,10 @@
 #
 # (remote build on Fly's builders; one machine, one volume). Once you ship the
 # repo public, CI runs the same command on every push to main.
+#
+# The app depends on staying at one machine: live updates for share links are
+# relayed in memory (src/live.ts), so a second machine's viewers would miss
+# changes written on the first.
 
 primary_region = "syd"
 
