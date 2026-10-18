@@ -35,10 +35,8 @@ to the other until both already were.
 
 ## What it does
 
-Most profile pages show the same thing to everyone who opens them. This one
-doesn't: what you see of someone depends on what you've already chosen to
-disclose about yourself. Add "board games" as a field, and you can now see
-what anyone else wrote under "board games" — and only that, and only them.
+That's the mechanic: what you see of someone depends on what you've already
+chosen to disclose yourself, with no feed and no browsing to shortcut it.
 Nobody is shown to you, and you're shown to nobody, without that reciprocity
 existing first.
 
@@ -51,7 +49,11 @@ specific diagnosis, which none of us are qualified to make.
 
 **Nobody is ever exposed to someone else's attention without having opted in
 first.** Every design decision below exists to serve that one sentence, not
-as an unrelated pile of safety features.
+as an unrelated pile of safety features. The test is Priya's situation above:
+would this feature let someone see her, or let her see someone else, before
+both had put in the same field themselves? If a feature needs "yes" to work,
+that's not a detail to settle in code — see "This project's rules" in
+`CLAUDE.md`.
 
 **What's enforced** (checked by `spec/`, not just argued):
 
@@ -110,6 +112,17 @@ passive, browsable pool of field titles don't exist yet.
 - Helen Nissenbaum's **contextual integrity** — privacy isn't secrecy, it's
   information flowing only within the context it was disclosed in. The
   mutual-field rule is this, directly implemented.
+- Festinger, Schachter & Back's **propinquity effect**, and the broader
+  research on the adult "friendship recession" — Priya's problem isn't a
+  personality trait, it's the loss of the unplanned, repeated contact (a
+  dorm floor, a seminar) that used to make friendship effortless. A shared
+  field is meant to manufacture a little of that same low-stakes repetition
+  around a topic, not to replace it with matching.
+- Research on **dating-app self-presentation burnout** — sustained,
+  visible-by-default self-presentation is its own cost, separate from
+  whatever's actually written on the profile. That's why the mutual-field
+  gate sits in front of content being shown at all, rather than acting as a
+  moderation layer after the fact.
 
 ---
 *First draft, written before most of it was built. Expected to be wrong in
