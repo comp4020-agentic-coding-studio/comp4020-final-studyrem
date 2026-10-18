@@ -57,8 +57,6 @@ is judged, not tested, and admitted as such further down.
   are a direct link, or a search scoped to a field you already hold.
 - A given field suggestion doesn't resurface to the same person more than
   once in seven days.
-- (This week, scaled down to what's actually built: a field you add is still
-  there when you come back, including after a restart or redeploy.)
 
 **What's judged, not tested:**
 
@@ -73,27 +71,8 @@ is judged, not tested, and admitted as such further down.
   general, honours the audience or just borrows its legitimacy. We're
   watching for the difference.
 
-**Current state (crit 10).** You log in and edit your own profile — add a
-field, or remove one. Reaching someone else now works two ways, both
-enforcing the rule above server-side:
-
-- **Your profile link** (`/u/<username>`, shown on your own page) shows a
-  logged-in visitor only the fields you both hold, and it updates live,
-  without a reload, when either of you adds or removes a matching field. The
-  whole-profile share link from crit 9 — which showed everything to whoever
-  held the link — is gone; this replaces it.
-- **Search**, scoped to a field you already hold, surfaces only other people
-  who also hold that exact field, and only what they wrote under it.
-
-Adding a field now suggests existing titles as you type, ranked by how many
-people already use them, to nudge toward a shared vocabulary. Matching is
-case-insensitive — "board games" and "Board Games" are the same field — but
-genuinely different wording ("board games" vs. "boardgames") still won't
-match unless you pick the suggestion; that's what the nudge is for, not
-something the app can fix automatically.
-
-Suggestions (the contextual "someone has a field like yours" mechanism) and a
-passive, browsable pool of field titles don't exist yet.
+(Current build status — what's actually shipped vs. not yet — is tracked as
+working notes outside this repo, not here.)
 
 ## What shaped this
 
@@ -119,11 +98,9 @@ passive, browsable pool of field titles don't exist yet.
   own form of emotional labor (dating-app burnout studies) — why the
   mutual-field gate sits in front of content being shown at all, rather than
   acting as a moderation layer after the fact.
-- Amber Case / Mark Weiser's **calm technology** — the one shipped piece of
-  this already follows it: a field suggestion won't resurface to the same
-  person more than once in seven days, so a "no" doesn't turn into nagging.
-  The fuller suggestion mechanism (not yet built) is designed to sit at the
-  edge of attention the same way.
+- Amber Case / Mark Weiser's **calm technology** — the suggestion mechanism
+  is designed to sit at the edge of attention, not demand a response; the
+  7-day no-resurface cap is the concrete expression of that restraint.
 
 ---
 *First draft, written before most of it was built. Expected to be wrong in
