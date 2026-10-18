@@ -211,6 +211,44 @@ export function matchingTitles(prefix: string, limit = 8): TitleSuggestion[] {
   return rows;
 }
 
+export interface Suggestion {
+  title: string;
+}
+
+// Decision 9: a single contextual nudge, computed from the specific profile
+// being viewed — the first title (in the owner's own creation order, for a
+// deterministic one-at-a-time nudge, not a list) the owner holds that the
+// viewer doesn't, excluding anything already suggested to this viewer in
+// the last 7 days (the weekly cap, checked against suggestions_shown).
+export function suggestField(ownerId: string, viewerId: string): Suggestion | undefined {
+  const ownerTitles = loadFields(ownerId).map((f) => f.title);
+  if (ownerTitles.length === 0) return undefined;
+  const viewerTitles = new Set(loadFields(viewerId).map((f) => f.title.toLowerCase()));
+  const recentlyShown = new Set(
+    (
+      db
+        .prepare(
+          `SELECT title FROM suggestions_shown
+           WHERE viewer_id = ? AND shown_at > datetime('now', '-7 days')`,
+        )
+        .all(viewerId) as { title: string }[]
+    ).map((r) => r.title.toLowerCase()),
+  );
+  const candidate = ownerTitles.find(
+    (title) => !viewerTitles.has(title.toLowerCase()) && !recentlyShown.has(title.toLowerCase()),
+  );
+  return candidate ? { title: candidate } : undefined;
+}
+
+// Records that `title` was just suggested to `viewerId`, starting (or
+// restarting) that pair's 7-day cap window.
+export function recordSuggestionShown(viewerId: string, title: string): void {
+  db.prepare(
+    `INSERT INTO suggestions_shown (viewer_id, title, shown_at) VALUES (?, ?, datetime('now'))
+     ON CONFLICT (viewer_id, title) DO UPDATE SET shown_at = excluded.shown_at`,
+  ).run(viewerId, title);
+}
+
 export interface FieldMatch {
   username: string;
   content: string;

@@ -460,11 +460,49 @@ What changed: added to `CLAUDE.md`'s project-specific rules, naming the
 Sloan/Balkan case directly as the precedent to check future citations
 against.
 
+**26. Built the suggestion mechanism (decision 9): a per-encounter nudge
+computed from the specific profile being viewed, capped at once per
+(viewer, title) per week via a new `suggestions_shown` table.**
+Context: the last unbuilt piece of decision 9, and the one that made
+README.md's "a given field suggestion doesn't resurface... more than once
+in seven days" enforced-bullet actually true rather than aspirational.
+What candidate is suggested: explicitly chosen over a system-wide
+popularity nudge — `suggestField(ownerId, viewerId)` in `src/data.ts`
+picks the first title (in the owner's own field-creation order) that the
+owner holds and the viewer doesn't, i.e. the complement of `mutualFields`,
+using the same case-insensitive comparison (`fields.title COLLATE NOCASE`,
+decision 23). This is what makes it genuinely "computed when B views A"
+rather than a generic trending-titles widget that happens to render on a
+profile page.
+The cap: `suggestions_shown (viewer_id, title, shown_at)`, primary key
+`(viewer_id, title)` — scoped to viewer-and-title, not
+viewer-and-owner-and-title, matching decision 9's literal wording ("once
+per field per viewer per week"). A fresh table via `CREATE TABLE IF NOT
+EXISTS`, no `ALTER TABLE` migration needed (same situation decision 20
+found: no real accounts exist on the deployed volume yet).
+What "anonymized" means here, worth stating explicitly since the mechanism
+is inherently tied to one specific profile on screen: the viewer obviously
+knows which profile prompted the nudge — that's unavoidable and is the
+point (decision 7: suggestions are pull-based, tied to an actual
+encounter). What's protected is the other direction — the owner is never
+told a suggestion was shown because of their fields. Enforced concretely in
+`src/server.ts`'s `suggestion_shown` audit line: it logs the viewer's id,
+username, and the suggested title, but deliberately not the owner's id or
+username, unlike every other audit line involving two parties (decision
+19). Nothing about a suggestion is pushed live or resurfaced outside the
+moment of that profile view, per decision 7's "discovery and suggestions
+stay pull-based" — the SSE stream (`src/live.ts`) is untouched.
+Where it renders: `renderMutualProfile` (`src/page.ts`), below the shared-
+fields list, with a form posting straight to the existing `/me/fields`
+handler — adding the suggested field is identical to adding any other
+field, so no new route was needed.
+
 ## Open / not yet decided
 
 - Whether a passive, pull-based "browse available fields" pool exists
-  alongside the contextual suggestion mechanism (decision 9) — raised,
-  not resolved. Decision 21 deliberately did not fold this in.
+  alongside the contextual suggestion mechanism (decision 9, built —
+  see decision 26) — raised, not resolved. Decision 21 deliberately did
+  not fold this in, and decision 26 doesn't either.
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
   title's existence and holder-count without holding it themselves —
   confirmed by the same audit (querying a single/double-letter prefix
@@ -475,7 +513,5 @@ against.
   fact that a narrow form of it already exists via autocomplete. Left
   as-is for now (probably intentional — it's literally how you discover
   what to type — but not an explicit call when decision 21 was made).
-- The suggestion mechanism itself (decision 9) and its `suggestions_shown`
-  table — not yet built.
 - The app's actual name (`README.md` still says "Commonplace, working
   title").

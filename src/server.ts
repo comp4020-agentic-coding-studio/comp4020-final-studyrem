@@ -16,8 +16,10 @@ import {
   loadFields,
   matchingTitles,
   mutualFields,
+  recordSuggestionShown,
   removeField,
   searchField,
+  suggestField,
   verifyPassword,
 } from "./data.ts";
 import type { User } from "./data.ts";
@@ -218,7 +220,23 @@ const server = createServer((req, res) => {
           viewerId: viewer.id,
           viewerUsername: viewer.username,
         });
-        return html(res, 200, renderMutualProfile(owner.username, mutualFields(owner.id, viewer.id)));
+        // Decision 9: computed from this specific encounter, but the owner
+        // is never named in what gets logged about it — only the viewer who
+        // saw it and the title shown, never which profile prompted it.
+        const suggestion = suggestField(owner.id, viewer.id);
+        if (suggestion) {
+          recordSuggestionShown(viewer.id, suggestion.title);
+          audit("suggestion_shown", {
+            viewerId: viewer.id,
+            viewerUsername: viewer.username,
+            title: suggestion.title,
+          });
+        }
+        return html(
+          res,
+          200,
+          renderMutualProfile(owner.username, mutualFields(owner.id, viewer.id), suggestion),
+        );
       }
 
       if (method === "GET" && path === "/readme/") {

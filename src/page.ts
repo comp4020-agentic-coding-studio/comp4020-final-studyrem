@@ -1,5 +1,5 @@
 // HTML templating. No framework: a handful of pages, each a template literal.
-import type { Field, FieldMatch } from "./data.ts";
+import type { Field, FieldMatch, Suggestion } from "./data.ts";
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -18,6 +18,8 @@ const STYLE = `
   li p { margin: 0 0 0.25rem; white-space: pre-wrap; }
   .error { color: #a00; }
   .notice { color: #555; }
+  .suggestion { color: #555; font-size: 0.9rem; }
+  .suggestion form { display: inline; margin: 0; padding: 0; border: 0; }
   .share input { width: 100%; box-sizing: border-box; }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 `;
@@ -141,8 +143,16 @@ ${items || "<li>No fields yet &mdash; add the first one.</li>"}
 // (data.ts: mutualFields) — decision 3, enforced server-side. The list is
 // server-rendered so it works without JS; the script then keeps it current
 // from the event stream, writing user text only through textContent.
-export function renderMutualProfile(username: string, fields: Field[]): string {
+export function renderMutualProfile(username: string, fields: Field[], suggestion?: Suggestion): string {
   const items = fields.map((f) => fieldItem(f)).join("\n");
+  const suggestionBlock = suggestion
+    ? `<p class="suggestion">${escapeHtml(username)} has a field you don't: <strong>${escapeHtml(suggestion.title)}</strong>.
+<form method="post" action="/me/fields">
+  <input type="hidden" name="title" value="${escapeHtml(suggestion.title)}" />
+  <label>What you want to say <input name="content" required maxlength="2000" /></label>
+  <button type="submit">Add it</button>
+</form></p>`
+    : "";
   return layout(
     `${escapeHtml(username)} — Commonplace`,
     `<h1>${escapeHtml(username)}</h1>
@@ -150,6 +160,7 @@ export function renderMutualProfile(username: string, fields: Field[]): string {
 <ul id="fields">
 ${items}
 </ul>
+${suggestionBlock}
 <script>
 (() => {
   const list = document.getElementById("fields");

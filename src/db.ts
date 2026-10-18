@@ -39,3 +39,17 @@ db.exec(`
 
 db.exec("CREATE INDEX IF NOT EXISTS idx_fields_user ON fields(user_id);");
 db.exec("CREATE INDEX IF NOT EXISTS idx_fields_title ON fields(title);");
+
+// Decision 9's weekly cap: a (viewer, title) pair that's been suggested
+// recently is skipped, regardless of which profile view would otherwise
+// surface it again — the cap is per viewer-and-title, not per encounter.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS suggestions_shown (
+    viewer_id TEXT NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL COLLATE NOCASE,
+    shown_at TEXT NOT NULL,
+    PRIMARY KEY (viewer_id, title)
+  );
+`);
+
+db.exec("CREATE INDEX IF NOT EXISTS idx_suggestions_shown_viewer ON suggestions_shown(viewer_id);");
