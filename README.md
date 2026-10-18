@@ -24,17 +24,15 @@ puts her in the same small, named room as someone else without requiring
 either of them to perform an opening line — and neither of them was visible
 to the other until both already were.
 
-*That's the shape of it: you see someone else's content in a field only if
-you've added that field yourself. There's no feed and no browsing — you
-reach someone through a link, or by searching inside a field you already
-keep.*
-
 ## What it does
 
-It's built for people who find unscripted small talk, or the sudden exposure
-of a typical profile or feed, to be the actual cost of meeting someone —
-framed around social anxiety broadly, not as a clinical claim about any
-specific diagnosis, which none of us are qualified to make.
+Most profile pages show the same thing to everyone who opens them. This one
+doesn't: what you see of someone depends on what you've already chosen to
+disclose about yourself. It's built for people who find unscripted small
+talk, or the sudden exposure of a typical profile or feed, to be the actual
+cost of meeting someone — framed around social anxiety broadly, not as a
+clinical claim about any specific diagnosis, which none of us are qualified
+to make.
 
 ## What good means here
 
@@ -99,23 +97,33 @@ passive, browsable pool of field titles don't exist yet.
 
 ## What shaped this
 
-- Amber Case / Mark Weiser's **calm technology** — the suggestion mechanism
-  (not yet built) is designed to sit at the edge of attention, not demand a
-  response.
+- Jourard's **"dyadic effect"** (self-disclosure reciprocity) and Altman &
+  Taylor's **social penetration theory** — why mutual disclosure
+  specifically, not just any field-matching, is the thing doing the work.
+  Disclosure that isn't reciprocated stalls connection, and the reciprocity
+  norm matters more between strangers than people with existing history —
+  which is exactly who this app is for.
 - Helen Nissenbaum's **contextual integrity** — privacy isn't secrecy, it's
-  information flowing only within the context it was disclosed in. The
-  mutual-field rule is this, directly implemented.
+  information flowing appropriately to its context. The mutual-field gate
+  borrows that framing rather than implementing it literally: there's no
+  pre-existing norm being matched here, just a new transmission principle —
+  a field only flows to someone who already holds it — built in the same
+  spirit.
 - Festinger, Schachter & Back's **propinquity effect**, and the broader
-  research on the adult "friendship recession" — Priya's problem isn't a
-  personality trait, it's the loss of the unplanned, repeated contact (a
-  dorm floor, a seminar) that used to make friendship effortless. A shared
-  field is meant to manufacture a little of that same low-stakes repetition
-  around a topic, not to replace it with matching.
-- Research on **dating-app self-presentation burnout** — sustained,
-  visible-by-default self-presentation is its own cost, separate from
-  whatever's actually written on the profile. That's why the mutual-field
-  gate sits in front of content being shown at all, rather than acting as a
-  moderation layer after the fact.
+  research on the adult "friendship recession" — diagnoses why Priya's
+  problem isn't a personality trait: losing the unplanned, repeated contact
+  (a dorm floor, a seminar) that used to make friendship effortless. This
+  app doesn't try to manufacture that repetition; a shared field is a
+  different fix for the same gap, not a substitute for it.
+- Research framing sustained, visible-by-default self-presentation as its
+  own form of emotional labor (dating-app burnout studies) — why the
+  mutual-field gate sits in front of content being shown at all, rather than
+  acting as a moderation layer after the fact.
+- Amber Case / Mark Weiser's **calm technology** — the one shipped piece of
+  this already follows it: a field suggestion won't resurface to the same
+  person more than once in seven days, so a "no" doesn't turn into nagging.
+  The fuller suggestion mechanism (not yet built) is designed to sit at the
+  edge of attention the same way.
 
 ---
 *First draft, written before most of it was built. Expected to be wrong in
