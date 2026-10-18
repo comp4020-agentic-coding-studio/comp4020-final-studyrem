@@ -17,6 +17,7 @@ const STYLE = `
   li h2 { margin: 0 0 0.25rem; font-size: 1rem; }
   li p { margin: 0 0 0.25rem; white-space: pre-wrap; }
   .error { color: #a00; }
+  .notice { color: #555; }
   .share input { width: 100%; box-sizing: border-box; }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 `;
@@ -65,7 +66,13 @@ ${error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : ""}
 const fieldItem = (f: Field, extra = ""): string =>
   `<li><h2>${escapeHtml(f.title)}</h2><p>${escapeHtml(f.content)}</p>${extra}</li>`;
 
-export function renderOwner(username: string, fields: Field[], profileUrl: string): string {
+export function renderOwner(
+  username: string,
+  fields: Field[],
+  profileUrl: string,
+  message?: string,
+  isError = false,
+): string {
   const items = fields
     .map((f) =>
       fieldItem(
@@ -75,12 +82,16 @@ export function renderOwner(username: string, fields: Field[], profileUrl: strin
       ),
     )
     .join("\n");
+  const messageBlock = message
+    ? `<p class="${isError ? "error" : "notice"}" role="alert">${escapeHtml(message)}</p>`
+    : "";
   return layout(
     "Your profile — Commonplace",
     `<header>
 <h1>Your profile</h1>
 <form class="inline" method="post" action="/logout">Logged in as <strong>${escapeHtml(username)}</strong> <button type="submit">Log out</button></form>
 </header>
+${messageBlock}
 <form method="post" action="/me/fields">
   <label>Field title <input name="title" required maxlength="80" list="title-suggestions" autocomplete="off" /></label>
   <datalist id="title-suggestions"></datalist>

@@ -8,7 +8,9 @@ import { marked } from "marked";
 import { audit } from "./audit.ts";
 import {
   addField,
+  bumpSessionVersion,
   createUser,
+  DUMMY_PASSWORD_HASH,
   findUserById,
   findUserByUsername,
   loadFields,
@@ -21,7 +23,7 @@ import {
 import type { User } from "./data.ts";
 import { notifyFieldsChanged, subscribeMutualView } from "./live.ts";
 import { renderLogin, renderMutualProfile, renderNotFound, renderOwner, renderReadme, renderSearch } from "./page.ts";
-import { clearedCookie, sessionCookie, sessionUserId } from "./session.ts";
+import { clearedCookie, sessionCookie, sessionPayload } from "./session.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
 
@@ -52,8 +54,14 @@ const redirect = (res: ServerResponse, location: string, cookie?: string): void 
 };
 
 const currentUser = (req: IncomingMessage): User | undefined => {
-  const id = sessionUserId(req);
-  return id ? findUserById(id) : undefined;
+  const payload = sessionPayload(req);
+  if (!payload) return undefined;
+  const user = findUserById(payload.userId);
+  // A stale sessionVersion means this cookie was issued before the user's
+  // most recent logout (or any other future event that bumps it) — treat it
+  // exactly like no session at all, not a lookup failure.
+  if (!user || user.sessionVersion !== payload.sessionVersion) return undefined;
+  return user;
 };
 
 function profileUrl(req: IncomingMessage, username: string): string {
@@ -81,23 +89,31 @@ const server = createServer((req, res) => {
           try {
             const user = createUser(username, password);
             audit("signup", { userId: user.id, username: user.username });
-            return redirect(res, "/me", sessionCookie(req, user.id));
+            return redirect(res, "/me", sessionCookie(req, user.id, user.sessionVersion));
           } catch (err) {
             return html(res, 400, renderLogin((err as Error).message));
           }
         }
         const user = findUserByUsername(username);
-        if (!user || !verifyPassword(user, password)) {
+        // Always runs a hash compare, existing username or not — otherwise
+        // an unknown username short-circuits before hashing and the timing
+        // gap (microseconds vs. a deliberately slow scrypt compare) leaks
+        // which usernames exist even though the response body doesn't.
+        const valid = verifyPassword(user?.passwordHash ?? DUMMY_PASSWORD_HASH, password);
+        if (!user || !valid) {
           audit("login_failed", { username });
           return html(res, 401, renderLogin("That username and password don't match."));
         }
         audit("login", { userId: user.id, username: user.username });
-        return redirect(res, "/me", sessionCookie(req, user.id));
+        return redirect(res, "/me", sessionCookie(req, user.id, user.sessionVersion));
       }
 
       if (method === "POST" && path === "/logout") {
         const user = currentUser(req);
-        if (user) audit("logout", { userId: user.id, username: user.username });
+        if (user) {
+          bumpSessionVersion(user.id);
+          audit("logout", { userId: user.id, username: user.username });
+        }
         return redirect(res, "/", clearedCookie(req));
       }
 
@@ -111,19 +127,32 @@ const server = createServer((req, res) => {
         }
 
         if (method === "GET" && path === "/me") {
-          return html(res, 200, renderOwner(user.username, loadFields(user.id), profileUrl(req, user.username)));
+          const message = {
+            "empty-field": "A field needs both a title and something to say — nothing was added.",
+            truncated: "That was added, but trimmed to fit the length limits.",
+          }[url.searchParams.get("error") ?? url.searchParams.get("notice") ?? ""];
+          const isError = url.searchParams.has("error");
+          return html(
+            res,
+            200,
+            renderOwner(user.username, loadFields(user.id), profileUrl(req, user.username), message, isError),
+          );
         }
 
         if (method === "POST" && path === "/me/fields") {
           const params = new URLSearchParams(await readBody(req));
-          const title = (params.get("title") ?? "").trim().slice(0, 80);
-          const content = (params.get("content") ?? "").trim().slice(0, 2000);
-          if (title && content) {
-            addField(user.id, title, content);
-            notifyFieldsChanged(user.id);
-            audit("field_added", { userId: user.id, username: user.username, title });
+          const rawTitle = (params.get("title") ?? "").trim();
+          const rawContent = (params.get("content") ?? "").trim();
+          if (!rawTitle || !rawContent) {
+            return redirect(res, "/me?error=empty-field");
           }
-          return redirect(res, "/me");
+          const title = rawTitle.slice(0, 80);
+          const content = rawContent.slice(0, 2000);
+          addField(user.id, title, content);
+          notifyFieldsChanged(user.id);
+          audit("field_added", { userId: user.id, username: user.username, title });
+          const truncated = title.length < rawTitle.length || content.length < rawContent.length;
+          return redirect(res, truncated ? "/me?notice=truncated" : "/me");
         }
 
         const del = method === "POST" && path.match(/^\/me\/fields\/([^/]+)\/delete$/);
@@ -153,8 +182,11 @@ const server = createServer((req, res) => {
         const title = (url.searchParams.get("title") ?? "").trim();
         const query = (url.searchParams.get("q") ?? "").trim();
         // Decision 6: scoped to a field you already hold — checked here,
-        // server-side, not just hidden in the UI.
-        const owns = title !== "" && loadFields(user.id).some((f) => f.title === title);
+        // server-side, not just hidden in the UI. Case-insensitive, matching
+        // the fields.title column's COLLATE NOCASE (this check runs in JS,
+        // not SQL, so it needs its own fold).
+        const owns =
+          title !== "" && loadFields(user.id).some((f) => f.title.toLowerCase() === title.toLowerCase());
         if (!owns) {
           res.writeHead(403, { "Content-Type": "text/plain" });
           return res.end("you don't have that field");

@@ -19,6 +19,7 @@ export interface User {
   id: string;
   username: string;
   passwordHash: string;
+  sessionVersion: number;
   createdAt: string;
 }
 
@@ -31,6 +32,7 @@ interface UserRow {
   id: string;
   username: string;
   password_hash: string;
+  session_version: number;
   created_at: string;
 }
 
@@ -38,6 +40,7 @@ const toUser = (row: UserRow): User => ({
   id: row.id,
   username: row.username,
   passwordHash: row.password_hash,
+  sessionVersion: row.session_version,
   createdAt: row.created_at,
 });
 
@@ -61,12 +64,18 @@ function hashPassword(password: string): string {
   return `scrypt:${salt.toString("hex")}:${scryptSync(password, salt, 64).toString("hex")}`;
 }
 
-export function verifyPassword(user: User, password: string): boolean {
-  const [, saltHex, hashHex] = user.passwordHash.split(":");
+export function verifyPassword(passwordHash: string, password: string): boolean {
+  const [, saltHex, hashHex] = passwordHash.split(":");
   const expected = Buffer.from(hashHex, "hex");
   const actual = scryptSync(password, Buffer.from(saltHex, "hex"), expected.length);
   return timingSafeEqual(actual, expected);
 }
+
+// A fixed-cost hash to compare against when the username doesn't exist, so a
+// login attempt always does one scrypt compare — otherwise an unknown
+// username short-circuits before hashing, and the timing gap (a real compare
+// vs. none at all) defeats the point of the generic "doesn't match" message.
+export const DUMMY_PASSWORD_HASH = hashPassword("not a real password, just a timing decoy");
 
 export const USERNAME_PATTERN = /^[a-z0-9_-]{3,32}$/;
 export const MIN_PASSWORD_LENGTH = 8;
@@ -99,6 +108,7 @@ export function createUser(username: string, password: string): User {
     id: randomUUID(),
     username: name,
     passwordHash: hashPassword(password),
+    sessionVersion: 0,
     createdAt: new Date().toISOString(),
   };
   db.prepare("INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)").run(
@@ -130,6 +140,13 @@ export function createUser(username: string, password: string): User {
   }
 
   return user;
+}
+
+// Invalidates every session for this user at once (logout-everywhere, not
+// per-device) by making every previously-issued cookie's embedded version
+// stale. Simpler than a revocation list: nothing to garbage-collect.
+export function bumpSessionVersion(userId: string): void {
+  db.prepare("UPDATE users SET session_version = session_version + 1 WHERE id = ?").run(userId);
 }
 
 export function loadFields(userId: string): Field[] {

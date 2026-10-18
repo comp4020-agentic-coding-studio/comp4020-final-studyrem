@@ -14,15 +14,24 @@ db.exec(`
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    session_version INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
   );
 `);
+
+// IF NOT EXISTS only guards table creation, not columns added after the
+// fact — this lets a volume created before session_version existed pick it
+// up on the next boot, the same forward-compatible spirit as IF NOT EXISTS.
+const userColumns = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+if (!userColumns.some((c) => c.name === "session_version")) {
+  db.exec("ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0;");
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS fields (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id),
-    title TEXT NOT NULL,
+    title TEXT NOT NULL COLLATE NOCASE,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL
   );

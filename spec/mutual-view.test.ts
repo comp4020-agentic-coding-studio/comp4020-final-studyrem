@@ -116,6 +116,19 @@ it("shows only fields both people hold, not the owner's other fields", async () 
   expect(text).not.toMatch(/A field the viewer doesn't hold\./);
 });
 
+it("treats differently-cased titles as the same field", async () => {
+  const base = fieldTitle();
+  const owner = await signUp();
+  const viewer = await signUp();
+  await addField(owner, base.toUpperCase(), "Owner's content, title in caps.");
+  await addField(viewer, base.toLowerCase(), "Viewer's own content, title lowercase.");
+
+  const res = await viewProfile(viewer, owner.username);
+  expect(res.status).toBe(200);
+  const text = await res.text();
+  expect(text).toMatch(/Owner's content, title in caps\./);
+});
+
 it("shows the empty state, not an error, when there's no overlap", async () => {
   const owner = await signUp();
   const viewer = await signUp();

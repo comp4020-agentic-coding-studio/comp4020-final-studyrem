@@ -135,7 +135,7 @@ on the actual Node version in use, so no bundler is needed either.
 with a local-directory fallback when `/data` isn't writable.**
 Why: smallest schema that carries the current (single-profile) interaction,
 per the crit 8 brief's own instruction to start there. Explicitly a
-temporary choice — see decision 19 for the planned successor.
+temporary choice — see decision 20 for the planned successor.
 
 **15. `marked` is the one runtime dependency, used only to render
 `README.md` at `/readme/`.**
@@ -310,11 +310,93 @@ Not solved here: two already-existing near-duplicate titles in the
 database aren't merged — this only nudges against *new* ones going
 forward, same limit `README.md` already named.
 
+**24. Fixed session invalidation on logout: a per-user session-version
+counter, not a server-side session table.**
+Context: a clean-subagent adversarial audit (standing rule 5 — audits go
+to a fresh subagent in a client stance) found that `POST /logout`
+(`src/session.ts`) only cleared the cookie client-side (`Max-Age=0`);
+the signed cookie itself carried no server-side revocation, so a captured
+pre-logout cookie value stayed fully valid for its whole 30-day lifetime.
+Confirmed reproducible: replaying the old cookie against `/me` after
+logout still returned the logged-in page.
+What changed: `users` gains `session_version` (added via a `PRAGMA
+table_info` check + `ALTER TABLE`, since `CREATE TABLE IF NOT EXISTS`
+doesn't retrofit columns onto an already-created table). The session
+cookie's signed payload grows from `userId.expiry.mac` to
+`userId.sessionVersion.expiry.mac`. Logout bumps that user's
+`session_version` (`bumpSessionVersion`); any cookie carrying the old
+version — the one just cleared, or any other copy already captured —
+fails `currentUser`'s version check immediately.
+Why a version counter over a session table: nothing to store or
+garbage-collect, and the existing stateless-signed-cookie design
+(`session.ts`'s own stated reason: a redeploy or idle-machine stop
+shouldn't log everyone out) stays intact — this is one integer per user,
+not a growing list.
+Trade-off, accepted deliberately: logging out invalidates *every* session
+for that account at once, not just the one that clicked logout — logging
+out on one device logs you out everywhere. For this app's scale (no
+"stay logged in on other devices" feature exists or was asked for) that
+matches what most users expect "log out" to mean, and a narrower
+per-device scheme would need a session table anyway.
+
+**25. Made field-title matching case-insensitive everywhere (`COLLATE
+NOCASE` on `fields.title`), closing the one place decision 10's concern
+still applied automatically.**
+Context: the same audit found `/search`'s field-ownership check was
+case-sensitive while its content search (`q=`) was already
+case-insensitive (SQLite's default `LIKE`) — an inconsistency, and the
+user's call on it: nothing should be case-sensitive. The `/search`
+ownership comparison happens in JS (`loadFields(...).some(...)`), not SQL,
+so it needed its own `.toLowerCase()` fold on both sides; every SQL-level
+comparison, `GROUP BY` (`matchingTitles`), and the existing title index
+now respect case automatically via the column collation, in one place,
+rather than relying on every current and future query to remember to fold.
+This only closes the identical-text-different-case subset of decision 10's
+concern — "board games" vs. "boardgames" is still a different title, which
+is what the autocomplete nudge (decision 23) exists for, not something
+case-folding could ever fix.
+
+**26. Hardening from the same audit: removed a login timing side-channel;
+gave visible feedback when a field submission is rejected or truncated.**
+Login previously short-circuited before hashing when a username didn't
+exist, so an existing-username wrong-password attempt (~25-30ms, a real
+scrypt compare runs) was consistently ~15x slower than a nonexistent-
+username attempt (~1-2ms) — identical response bodies, but the timing
+alone told an attacker which usernames exist. Fixed by always running a
+hash compare: `verifyPassword` now takes a `passwordHash` directly rather
+than a `User`, so login can pass a fixed `DUMMY_PASSWORD_HASH` when no
+user was found, making the cost the same either way. Verified by
+re-running the same informal timing comparison the audit used — the gap is
+gone. No automated timing assertion was added to `spec/`; timing-based test
+assertions are inherently flaky, so this is a manual/re-run check, not a
+`pnpm check` one.
+Separately, every `POST /me/fields` redirect used to look identical —
+`303 → /me` — whether a field was added, silently rejected (empty title or
+content after trim), or silently truncated to the length limits. Now an
+empty submission redirects to `/me?error=empty-field` and a truncated one
+to `/me?notice=truncated`, each rendered as a message on the next `/me`
+load. Deliberately **not** extended to field deletion: giving visible
+feedback when a delete targets a nonexistent id, or someone else's field,
+would mean telling the caller whether that id exists/who owns it — an
+existence oracle immediately adjacent to the IDOR check the same audit
+confirmed passes cleanly today. Silent no-op stays the right behavior
+there.
+
 ## Open / not yet decided
 
 - Whether a passive, pull-based "browse available fields" pool exists
   alongside the contextual suggestion mechanism (decision 9) — raised,
   not resolved. Decision 23 deliberately did not fold this in.
+- `GET /fields/suggest` (decision 23) lets any logged-in user learn a
+  title's existence and holder-count without holding it themselves —
+  confirmed by the same audit (querying a single/double-letter prefix
+  surfaces titles across the whole system, titles and counts only, never
+  content or usernames). This is a weaker, already-partially-live version
+  of the "passive browse pool" question above, not a separate issue:
+  resolving the browse-pool decision either way should account for the
+  fact that a narrow form of it already exists via autocomplete. Left
+  as-is for now (probably intentional — it's literally how you discover
+  what to type — but not an explicit call when decision 23 was made).
 - The suggestion mechanism itself (decision 9) and its `suggestions_shown`
   table — not yet built.
 - The app's actual name (`README.md` still says "Commonplace, working

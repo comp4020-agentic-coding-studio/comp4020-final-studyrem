@@ -114,3 +114,16 @@ it("an empty query shows the form with no results, not every holder of the field
   expect(text).not.toMatch(/party games/i);
   expect(text).not.toMatch(/Nobody else has this field yet\./);
 });
+
+it("treats the ownership check as case-insensitive, matching the title's own case-insensitive storage", async () => {
+  const title = fieldTitle();
+  const a = await signUp();
+  const b = await signUp();
+  await addField(a, title.toLowerCase(), "Mostly co-op.");
+  await addField(b, title.toUpperCase(), "Love party games.");
+
+  const res = await search(a, title.toUpperCase(), "party");
+  expect(res.status).toBe(200);
+  const text = await res.text();
+  expect(text).toMatch(/party games/i);
+});
