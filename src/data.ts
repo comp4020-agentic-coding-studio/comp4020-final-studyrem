@@ -1,9 +1,11 @@
-// Accounts and their profiles, as JSON files on the Fly volume. Each user owns
-// an ordered list of fields; a user may hold one share token, which is the only
-// way anyone else reaches their profile.
+// Accounts and their profiles, in SQLite on the Fly volume (see db.ts). Each
+// user owns an ordered list of fields; a user may hold one share token, which
+// is the only way anyone else reaches their profile.
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
+import { DATA_DIR } from "./data-dir.ts";
+import { db } from "./db.ts";
 
 export interface Field {
   id: string;
@@ -20,48 +22,41 @@ export interface User {
   createdAt: string;
 }
 
-// Fly mounts the one persistent volume at /data (see fly.toml). Outside that
-// container — running locally, or in CI's throwaway tmpfs — /data may not be
-// writable, so this falls back to a repo-local, gitignored directory rather
-// than crashing. Either way, DATA_DIR can override it directly.
-function resolveDataDir(): string {
-  const preferred = process.env.DATA_DIR ?? "/data";
-  try {
-    mkdirSync(preferred, { recursive: true });
-    return preferred;
-  } catch {
-    const fallback = "./data";
-    mkdirSync(fallback, { recursive: true });
-    return fallback;
-  }
-}
+export { DATA_DIR };
 
-export const DATA_DIR = resolveDataDir();
-const USERS_PATH = join(DATA_DIR, "users.json");
-const FIELDS_DIR = join(DATA_DIR, "fields");
 // The single shared profile from crit 8, before accounts existed.
 const LEGACY_PROFILE_PATH = join(DATA_DIR, "profile.json");
-mkdirSync(FIELDS_DIR, { recursive: true });
 
-function readJson<T>(path: string, fallback: T): T {
-  if (!existsSync(path)) return fallback;
-  try {
-    return JSON.parse(readFileSync(path, "utf8")) as T;
-  } catch {
-    // A corrupt file shouldn't take the whole app down on every request.
-    return fallback;
-  }
+interface UserRow {
+  id: string;
+  username: string;
+  password_hash: string;
+  share_token: string | null;
+  created_at: string;
 }
 
-// Write-then-rename, so a crash mid-write leaves the old file, never half a file.
-function writeJson(path: string, value: unknown): void {
-  const tmp = `${path}.${process.pid}.tmp`;
-  writeFileSync(tmp, JSON.stringify(value, null, 2));
-  renameSync(tmp, path);
+const toUser = (row: UserRow): User => ({
+  id: row.id,
+  username: row.username,
+  passwordHash: row.password_hash,
+  shareToken: row.share_token,
+  createdAt: row.created_at,
+});
+
+interface FieldRow {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  created_at: string;
 }
 
-const loadUsers = (): User[] => readJson<User[]>(USERS_PATH, []);
-const saveUsers = (users: User[]): void => writeJson(USERS_PATH, users);
+const toField = (row: FieldRow): Field => ({
+  id: row.id,
+  title: row.title,
+  content: row.content,
+  createdAt: row.created_at,
+});
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16);
@@ -80,16 +75,19 @@ export const MIN_PASSWORD_LENGTH = 8;
 
 export function findUserByUsername(username: string): User | undefined {
   const wanted = username.toLowerCase();
-  return loadUsers().find((u) => u.username === wanted);
+  const row = db.prepare("SELECT * FROM users WHERE username = ?").get(wanted) as UserRow | undefined;
+  return row ? toUser(row) : undefined;
 }
 
 export function findUserById(id: string): User | undefined {
-  return loadUsers().find((u) => u.id === id);
+  const row = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as UserRow | undefined;
+  return row ? toUser(row) : undefined;
 }
 
 export function findUserByShareToken(token: string): User | undefined {
   if (!token) return undefined;
-  return loadUsers().find((u) => u.shareToken === token);
+  const row = db.prepare("SELECT * FROM users WHERE share_token = ?").get(token) as UserRow | undefined;
+  return row ? toUser(row) : undefined;
 }
 
 // Throws with a user-facing message on invalid input or a taken username.
@@ -101,8 +99,9 @@ export function createUser(username: string, password: string): User {
   if (password.length < MIN_PASSWORD_LENGTH) {
     throw new Error(`Passwords need at least ${MIN_PASSWORD_LENGTH} characters.`);
   }
-  const users = loadUsers();
-  if (users.some((u) => u.username === name)) throw new Error("That username is taken.");
+  if (findUserByUsername(name)) throw new Error("That username is taken.");
+
+  const isFirstUser = (db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number }).n === 0;
 
   const user: User = {
     id: randomUUID(),
@@ -111,43 +110,62 @@ export function createUser(username: string, password: string): User {
     shareToken: null,
     createdAt: new Date().toISOString(),
   };
+  db.prepare(
+    "INSERT INTO users (id, username, password_hash, share_token, created_at) VALUES (?, ?, ?, ?, ?)",
+  ).run(user.id, user.username, user.passwordHash, user.shareToken, user.createdAt);
+
   // The first account inherits crit 8's shared profile; the old file is kept,
   // renamed, rather than deleted.
-  if (users.length === 0 && existsSync(LEGACY_PROFILE_PATH)) {
-    saveFields(user.id, readJson<Field[]>(LEGACY_PROFILE_PATH, []));
+  if (isFirstUser && existsSync(LEGACY_PROFILE_PATH)) {
+    let legacyFields: Field[] = [];
+    try {
+      legacyFields = JSON.parse(readFileSync(LEGACY_PROFILE_PATH, "utf8")) as Field[];
+    } catch {
+      legacyFields = [];
+    }
+    for (const f of legacyFields) {
+      db.prepare("INSERT INTO fields (id, user_id, title, content, created_at) VALUES (?, ?, ?, ?, ?)").run(
+        f.id,
+        user.id,
+        f.title,
+        f.content,
+        f.createdAt,
+      );
+    }
     renameSync(LEGACY_PROFILE_PATH, `${LEGACY_PROFILE_PATH}.migrated`);
   }
-  users.push(user);
-  saveUsers(users);
+
   return user;
 }
 
 // Issues a fresh token, invalidating any previous one. Returns the new token.
 export function rotateShareToken(userId: string): string {
-  const users = loadUsers();
-  const user = users.find((u) => u.id === userId);
-  if (!user) throw new Error("no such user");
-  user.shareToken = randomBytes(24).toString("base64url");
-  saveUsers(users);
-  return user.shareToken;
+  const token = randomBytes(24).toString("base64url");
+  const result = db.prepare("UPDATE users SET share_token = ? WHERE id = ?").run(token, userId);
+  if (result.changes === 0) throw new Error("no such user");
+  return token;
 }
 
-const fieldsPath = (userId: string): string => join(FIELDS_DIR, `${userId}.json`);
-const saveFields = (userId: string, fields: Field[]): void => writeJson(fieldsPath(userId), fields);
-
 export function loadFields(userId: string): Field[] {
-  return readJson<Field[]>(fieldsPath(userId), []);
+  const rows = db
+    .prepare("SELECT * FROM fields WHERE user_id = ? ORDER BY created_at")
+    .all(userId) as unknown as FieldRow[];
+  return rows.map(toField);
 }
 
 export function addField(userId: string, title: string, content: string): Field[] {
-  const fields = loadFields(userId);
-  fields.push({ id: randomUUID(), title, content, createdAt: new Date().toISOString() });
-  saveFields(userId, fields);
-  return fields;
+  const field: Field = { id: randomUUID(), title, content, createdAt: new Date().toISOString() };
+  db.prepare("INSERT INTO fields (id, user_id, title, content, created_at) VALUES (?, ?, ?, ?, ?)").run(
+    field.id,
+    userId,
+    field.title,
+    field.content,
+    field.createdAt,
+  );
+  return loadFields(userId);
 }
 
 export function removeField(userId: string, fieldId: string): Field[] {
-  const fields = loadFields(userId).filter((f) => f.id !== fieldId);
-  saveFields(userId, fields);
-  return fields;
+  db.prepare("DELETE FROM fields WHERE id = ? AND user_id = ?").run(fieldId, userId);
+  return loadFields(userId);
 }
