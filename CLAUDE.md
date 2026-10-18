@@ -47,3 +47,12 @@ tonight's design discussion:
   typing indicators, read receipts, "online now" badges, or anything else
   that nudges someone toward an immediate response, unless I explicitly ask
   for it.
+- **Citations earn their place by argument, not genre.** Before a source
+  lands in "What shaped this" (or anywhere else in README.md), it needs a
+  specific line connecting it to this app's actual mechanic — not just
+  resemblance to the kind of software this is ("small," "not for growth",
+  "anti-platform"). Robin Sloan's "home-cooked app" essay and Aral Balkan's
+  "What is the Small Web?" were both cut from an early draft for exactly
+  this reason: real essays, confidently placed, that never did any work for
+  this app's specific argument. Recognizing the genre a project belongs to
+  is not the same as checking a citation against its claim.
