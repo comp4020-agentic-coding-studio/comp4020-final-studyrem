@@ -82,13 +82,39 @@ export function renderOwner(username: string, fields: Field[], profileUrl: strin
 <form class="inline" method="post" action="/logout">Logged in as <strong>${escapeHtml(username)}</strong> <button type="submit">Log out</button></form>
 </header>
 <form method="post" action="/me/fields">
-  <label>Field title <input name="title" required maxlength="80" /></label>
+  <label>Field title <input name="title" required maxlength="80" list="title-suggestions" autocomplete="off" /></label>
+  <datalist id="title-suggestions"></datalist>
   <label>What you want to say <textarea name="content" required maxlength="2000" rows="4"></textarea></label>
   <button type="submit">Add field</button>
 </form>
 <ul>
 ${items || "<li>No fields yet &mdash; add the first one.</li>"}
 </ul>
+<script>
+(() => {
+  const input = document.querySelector('input[name="title"]');
+  const datalist = document.getElementById("title-suggestions");
+  let timer;
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q === "") {
+      datalist.replaceChildren();
+      return;
+    }
+    timer = setTimeout(async () => {
+      const res = await fetch("/fields/suggest?q=" + encodeURIComponent(q));
+      if (!res.ok) return;
+      const suggestions = await res.json();
+      datalist.replaceChildren(...suggestions.map((s) => {
+        const option = document.createElement("option");
+        option.value = s.title;
+        return option;
+      }));
+    }, 250);
+  });
+})();
+</script>
 <div class="share">
   <h2>Your profile link</h2>
   <p>Anyone who's logged in and has added a field you also hold sees that

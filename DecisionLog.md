@@ -275,14 +275,47 @@ over: title matching stays exact-string (decision 10's autocomplete, not
 yet built, is the design's intended fix, not something this change should
 substitute for with e.g. silent case-folding).
 
+**23. Built field-title autocomplete (decision 10), as a prefix-matched,
+popularity-ranked suggestion list; confirmed it shows nothing until the
+user types.**
+Context: decision 10 named the actual harm this prevents — an un-nudged
+near-duplicate title ("Favourite stim toy" vs "favorite stim toy") doesn't
+just fail to help discovery, it silently breaks matching, since both
+`mutualFields` and `searchField` compare titles by exact string equality.
+Raised explicitly asking whether the empty/focus state should show
+anything, since that's the same question as the still-open "passive browse
+pool" decision in miniature: confirmed nothing shows until at least one
+character is typed, so this change doesn't fold that open decision in as
+an unstated side effect.
+What was built: `src/data.ts`'s `matchingTitles(prefix, limit)` — a
+`LIKE prefix%` match (not substring: this is "what might you be about to
+type," not search), ranked by how many existing fields already use that
+title, which is the literal "nudge toward a shared vocabulary" the decision
+asks for. An empty prefix is rejected server-side, not just left to the
+client to avoid — without that check, the endpoint itself would be a
+de facto browse-all-titles API, which decision 5 (no browse page) already
+ruled out; this keeps that decision closed regardless of what any later
+client does with the endpoint. `GET /fields/suggest` requires login (401,
+not a redirect — it's a `fetch()`-consumed JSON endpoint, not something a
+browser navigates to) and isn't audit-logged, since unlike search or a
+profile view it never reveals who holds a title or what they wrote, only
+that the title string exists somewhere — not the kind of access `audit()`
+exists to record.
+Why a native `<datalist>` over a hand-rolled dropdown or htmx: this is the
+one place in the app that genuinely needs client-side interactivity (the
+framework research earlier in this project found server-rendered pages
+cover everything else), and `<datalist>` is the smallest version of it —
+no keyboard-nav or positioning code to write ourselves.
+Not solved here: two already-existing near-duplicate titles in the
+database aren't merged — this only nudges against *new* ones going
+forward, same limit `README.md` already named.
+
 ## Open / not yet decided
 
 - Whether a passive, pull-based "browse available fields" pool exists
   alongside the contextual suggestion mechanism (decision 9) — raised,
-  not resolved.
+  not resolved. Decision 23 deliberately did not fold this in.
 - The suggestion mechanism itself (decision 9) and its `suggestions_shown`
   table — not yet built.
-- Autocomplete on field titles while creating one (decision 10) — not yet
-  built; also the reason near-duplicate titles currently just don't match.
 - The app's actual name (`README.md` still says "Commonplace, working
   title").

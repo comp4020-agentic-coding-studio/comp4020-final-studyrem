@@ -169,6 +169,31 @@ export function mutualFields(ownerId: string, viewerId: string): Field[] {
   return rows.map(toField);
 }
 
+export interface TitleSuggestion {
+  title: string;
+  count: number;
+}
+
+// Prefix match, ranked by how many existing fields already use that title —
+// decision 10's "nudge toward a shared vocabulary." An empty prefix returns
+// nothing: without this check the endpoint would be a de facto browse-all
+// list of every title in the system, which decision 5 (no browse page)
+// already ruled out.
+export function matchingTitles(prefix: string, limit = 8): TitleSuggestion[] {
+  if (prefix === "") return [];
+  const escaped = prefix.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const rows = db
+    .prepare(
+      `SELECT title, COUNT(*) AS count FROM fields
+       WHERE title LIKE ? || '%' ESCAPE '\\'
+       GROUP BY title
+       ORDER BY count DESC, title ASC
+       LIMIT ?`,
+    )
+    .all(escaped, limit) as unknown as TitleSuggestion[];
+  return rows;
+}
+
 export interface FieldMatch {
   username: string;
   content: string;

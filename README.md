@@ -64,11 +64,14 @@ field themselves.
 - **Search**, scoped to a field you already hold, surfaces only other people
   who also hold that exact field, and only what they wrote under it.
 
-Suggestions (the contextual "someone has a field like yours" mechanism) don't
-exist yet. Nor does autocomplete on field titles, which means two
-differently-cased or worded titles for the same thing ("board games" vs.
-"Board Games") currently just don't match each other — a known gap, not a
-silent compromise.
+Adding a field now suggests existing titles as you type, ranked by how many
+people already use them, to nudge toward a shared vocabulary. It's a nudge,
+not a rule: two differently-cased or worded titles for the same thing
+("board games" vs. "Board Games") still won't match each other if you type
+past the suggestion — a known limit, not a silent compromise.
+
+Suggestions (the contextual "someone has a field like yours" mechanism) and a
+passive, browsable pool of field titles don't exist yet.
 
 ## What shaped this
 

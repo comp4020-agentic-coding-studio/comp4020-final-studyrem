@@ -12,6 +12,7 @@ import {
   findUserById,
   findUserByUsername,
   loadFields,
+  matchingTitles,
   mutualFields,
   removeField,
   searchField,
@@ -38,6 +39,11 @@ function readBody(req: IncomingMessage): Promise<string> {
 const html = (res: ServerResponse, status: number, body: string): void => {
   res.writeHead(status, { "Content-Type": "text/html; charset=utf-8" });
   res.end(body);
+};
+
+const json = (res: ServerResponse, status: number, body: unknown): void => {
+  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify(body));
 };
 
 const redirect = (res: ServerResponse, location: string, cookie?: string): void => {
@@ -129,6 +135,13 @@ const server = createServer((req, res) => {
           audit("field_removed", { userId: user.id, username: user.username, title });
           return redirect(res, "/me");
         }
+      }
+
+      if (method === "GET" && path === "/fields/suggest") {
+        const user = currentUser(req);
+        if (!user) return json(res, 401, { error: "log in first" });
+        const q = (url.searchParams.get("q") ?? "").trim();
+        return json(res, 200, matchingTitles(q));
       }
 
       if (method === "GET" && path === "/search") {
