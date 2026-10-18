@@ -1,27 +1,18 @@
 # Commonplace (working title — not locked in yet)
 
-*A profile is a set of fields, each one a title and whatever you choose to
-say about it. You see someone else's content in a field only if you've
-added that field yourself. There's no feed and no browsing — you reach
-someone through a link, or by searching inside a field you already keep.*
+Take Priya. She tried a profile app once — not even a romantic one — and
+deleted it inside a week. It wasn't that she had nothing to put on it. It
+was that the moment it went live, she was visible to anyone who opened the
+link, performing an introduction to people who hadn't shown her anything
+back, for as long as the profile stayed up. Being looked at before anyone
+had earned it was the cost, not the writing.
 
-Take Priya, three weeks into a job in a city where she doesn't know anyone
-yet. University gave her that without trying — a dorm floor, a seminar, the
-same five people in the same lab twice a week — friendship that took no
-deliberate effort because proximity did the work. A workplace doesn't supply
-that the same way, and an apartment building where nobody's home during the
-day doesn't either; the people she'd want to meet aren't somewhere she passes
-twice a day anymore, they're somewhere she'd have to go looking.
-"So what do you do for fun?" from someone she just met at a work thing has
-never worked for her either — it asks for an answer before either of them has
-actually said anything real yet.
-
-She tried a profile app once — not even a romantic one — and deleted it
-inside a week. It wasn't that she had nothing to put on it. It was that the
-moment it went live, she was visible to anyone who opened the link,
-performing an introduction to people who hadn't shown her anything back, for
-as long as the profile stayed up. Being looked at before anyone had earned it
-was the cost, not the writing.
+She's three weeks into a job in a city where she doesn't know anyone yet,
+and the old ways of meeting people haven't been replacing themselves.
+University supplied that without trying — a dorm floor, a seminar, the same
+five people in the same lab twice a week. A workplace doesn't, and
+"so what do you do for fun?" from someone she just met there asks for an
+answer before either of them has actually said anything real yet.
 
 So here: Priya adds "co-op games" as a field — not posted, not sent to
 anyone, just named. She picked it because showing up to actually do something
@@ -33,12 +24,12 @@ puts her in the same small, named room as someone else without requiring
 either of them to perform an opening line — and neither of them was visible
 to the other until both already were.
 
-## What it does
+*That's the shape of it: you see someone else's content in a field only if
+you've added that field yourself. There's no feed and no browsing — you
+reach someone through a link, or by searching inside a field you already
+keep.*
 
-That's the mechanic: what you see of someone depends on what you've already
-chosen to disclose yourself, with no feed and no browsing to shortcut it.
-Nobody is shown to you, and you're shown to nobody, without that reciprocity
-existing first.
+## What it does
 
 It's built for people who find unscripted small talk, or the sudden exposure
 of a typical profile or feed, to be the actual cost of meeting someone —
@@ -54,6 +45,10 @@ would this feature let someone see her, or let her see someone else, before
 both had put in the same field themselves? If a feature needs "yes" to work,
 that's not a detail to settle in code — see "This project's rules" in
 `CLAUDE.md`.
+
+That the rule holds mechanically is enforced and checked (below); whether it
+accomplishes what it's for — a connection that doesn't feel like exposure —
+is judged, not tested, and admitted as such further down.
 
 **What's enforced** (checked by `spec/`, not just argued):
 
@@ -80,11 +75,9 @@ that's not a detail to settle in code — see "This project's rules" in
   general, honours the audience or just borrows its legitimacy. We're
   watching for the difference.
 
-**Current state (crit 10), and where it still falls short of the above.** You
-log in and edit your own profile — add a field, or remove one. Reaching
-someone else now works two ways, and both enforce the first rule above
-server-side: a viewer sees a field's content only if they've added that same
-field themselves.
+**Current state (crit 10).** You log in and edit your own profile — add a
+field, or remove one. Reaching someone else now works two ways, both
+enforcing the rule above server-side:
 
 - **Your profile link** (`/u/<username>`, shown on your own page) shows a
   logged-in visitor only the fields you both hold, and it updates live,
