@@ -6,22 +6,21 @@ this is the fuller working record it gets written from. Supersedes
 `notes/process-draft.md` and the decisions previously mixed into
 `notes/final-project-design.md` (both folded in here, now redundant).
 
+Renumbered once (see git history for the prior numbering): a few entries
+that weren't actually decisions were dropped, a few redundant entries were
+merged, and several real decisions that existed only in code/commit history
+were added. Every cross-reference below uses the current numbers.
+
 ## Product decisions
 
 **1. App concept: a mutual-disclosure profile board.**
 Context: started from autism-specific framing, needed something more
 specific than a generic social app but defensible to claim.
 Why: avoids both the "median answer" (a feed/chat app) and overclaiming
-expertise on a clinical population. See decision 3 for the final audience
+expertise on a clinical population. See decision 2 for the final audience
 framing.
 
-**2. Headline principle: nobody is ever exposed to someone's attention
-without having opted in first.**
-Why: every other product decision below is an instance of this one idea,
-not an unrelated pile of safety features — it's what makes the design
-choices cohere into a single argument for `README.md`.
-
-**3. Audience: framed around social anxiety broadly, not autism
+**2. Audience: framed around social anxiety broadly, not autism
 specifically.**
 Context: raised that narrowing to autism risked claiming clinical authority
 none of us have.
@@ -30,15 +29,16 @@ Why: "social anxiety" is specific enough to drive real design constraints
 not to overclaim expertise. Rejected "anyone who dislikes small talk" as
 too broad to be a real constraint.
 
-**4. Core mechanic: mutual field-visibility.**
+**3. Core mechanic: mutual field-visibility.**
 A viewer sees a field's content only if they've also added that field
 themselves.
-Why: operationalizes the headline principle directly (this is Helen
-Nissenbaum's contextual integrity, essentially implemented rather than
-cited as a metaphor), and produces a crisp, testable invariant for free —
-most app ideas have to search for a rule like this.
+Why: operationalizes the headline principle directly — nobody is ever
+exposed to someone's attention without having opted in first, the one
+sentence every other decision below is an instance of, not an unrelated
+pile of safety features. It also produces a crisp, testable invariant for
+free — most app ideas have to search for a rule like this.
 
-**5. Discovery: no public feed or browse page. Reachable only by direct
+**4. Discovery: no public feed or browse page. Reachable only by direct
 link, or by searching inside a field you already hold.**
 Context: considered "suggest a profile you might like" (person-first
 discovery) and rejected it.
@@ -50,16 +50,16 @@ wrong framing that treated "growth" and "calm" as opposed. They aren't —
 the axis that matters is *who initiates*, not *whether growth happens at
 all*.
 
-**6. Search semantics: scoped to a field you already have; returns only
+**5. Search semantics: scoped to a field you already have; returns only
 users who also have that field.**
 Context: considered a "teaser" design (reveal a match exists, hide content
 until you unlock it) and rejected it in favor of this simpler rule.
 Why: this isn't a new privacy mechanism — it's the exact same mutual-field
-rule from decision 4, applied to search instead of direct viewing. One
+rule from decision 3, applied to search instead of direct viewing. One
 invariant, enforced in two places, is simpler to build and reason about
 than two different rules that happen to feel similar.
 
-**7. Real-time interpretation: propagation latency (~1s, no reload),
+**6. Real-time interpretation: propagation latency (~1s, no reload),
 not interaction pace.**
 Context: the spec's "real-time" requirement could be read as "the app
 needs to feel like live chat" or as "a change reaches another open session
@@ -69,9 +69,9 @@ Decision: the *system* is real-time infrastructure; using it synchronously
 (building a profile together live) is one optional use, never a
 requirement baked into the UI.
 
-**8. Real-time scope: only an already-open, already-reciprocal profile
+**7. Real-time scope: only an already-open, already-reciprocal profile
 view updates live. Discovery and suggestions stay pull-based.**
-Context: given decision 5 (no feed) and the suggestion mechanism being
+Context: given decision 4 (no feed) and the suggestion mechanism being
 inherently per-encounter, asked directly where real-time actually applies.
 Why: the only place two sessions can legitimately both be "present" on the
 same data is a profile view that already required reciprocity to exist.
@@ -81,6 +81,27 @@ Consequence: demoing this at the crit 9 pod session requires the pod to
 establish reciprocity live first (one adds a field, the other matches it),
 then show the live update — a real demo of the actual mechanic, not a
 fabricated one.
+
+**8. Real-time transport: Server-Sent Events, relayed in an in-memory,
+per-machine subscriber set, with a 25s heartbeat.**
+Context: decisions 6/7 settle *what* counts as real-time and *where* it
+applies, but not *how* it's built.
+Why SSE over WebSockets: the stream is push-only — the client never sends
+anything back over it — so SSE's plain-HTTP, auto-reconnecting model is
+simpler than running a WebSocket handshake for a one-directional feature.
+Why in-memory, not Redis/pub-sub: matches the course's fixed infrastructure
+(one Fly machine, one volume, no separate database server app — see
+decision 11's "decentralized is governance, not infrastructure" reading). A
+single process can hold every open subscription directly; there's nothing
+else running to coordinate with.
+Consequence, stated here rather than discovered later: this design locks
+the app to one Fly machine — a second machine's viewers would miss changes
+written on the first, since the in-memory relay can't reach across
+machines. `fly.toml` and `src/live.ts`'s own comment both name this
+constraint.
+Why the 25s heartbeat: Fly's proxy drops a connection that stays silent too
+long; a periodic comment line keeps the stream open without the client ever
+seeing it.
 
 **9. Growth/suggestion mechanism: contextual per-encounter suggestion
 (computed when B views A), capped at once per field per viewer per week,
@@ -114,57 +135,97 @@ Why this matters: (a) is incompatible with the course's fixed harness (one
 Fly machine, one volume, no separate database server app) regardless of
 ambition — this isn't a course-plugin limitation, it's what the provided
 infrastructure physically is. (b) is fully buildable on that same
-infrastructure and is what decisions 5, 9, and 10 already deliver. Settled
+infrastructure and is what decisions 4, 9, and 10 already deliver. Settled
 on (b) as the actual meaning going forward.
 
 ## Process/workflow decisions
 
-**12. Crit 8 scope: single profile, add a field, persist. No matching,
-search, suggestions, or real-time this week.**
-Why: the crit 8 brief explicitly excludes the feature list, the real-time
-layer, and polish — "proof of life" only. Confirmed against the published
-brief, not assumed.
+**12. Stack: plain Node (`node:http`) + TypeScript, run directly with
+`node src/server.ts`. No framework, no build step; `marked` is the one
+runtime dependency; Docker copies source straight in, no build stage.**
+Why: three routes (crit 8) didn't justify a framework's weight; Node runs
+TypeScript natively (erasable syntax only — no enums/namespaces), confirmed
+working on the actual Node version in use, so no bundler is needed either.
+Hand-rolling a markdown renderer under deadline pressure wasn't a good
+trade, so `marked` renders `README.md` at `/readme/`; everything else (the
+page template) is template literals. Docker (`node:24-slim`,
+`pnpm install --frozen-lockfile --prod`, then `node src/server.ts`
+directly) has nothing to compile, matching the course's only fixed
+contract (serve HTTP on `0.0.0.0:$PORT`, whatever the stack).
+Reconfirmed (final project): re-examined on the assumption the growing
+feature set (accounts, real-time, search, suggestions) might now justify a
+framework. Kept: the whole server is ~580 lines across six files, with
+routing, sessions and SSE already hand-rolled and working; nothing in the
+final project brief or in `DesignDraft.md` (templating, routing,
+middleware) needs what a framework would add. A framework swap here would
+be a stack change with no corresponding design need, which is exactly what
+this decision's own rationale (a dependency should earn its place) argues
+against. Revisit only if a concrete, named requirement appears that
+`node:http` genuinely can't serve cleanly — not in response to the feature
+list simply growing.
 
-**13. Stack: plain Node (`node:http`) + TypeScript, run directly with
-`node src/server.ts`. No framework, no build step.**
-Why: three routes don't justify a framework's weight; Node runs TypeScript
-natively (erasable syntax only — no enums/namespaces), confirmed working
-on the actual Node version in use, so no bundler is needed either.
-
-**14. Persistence (crit 8 only): flat JSON array at `/data/profile.json`,
+**13. Persistence (crit 8 only): flat JSON array at `/data/profile.json`,
 with a local-directory fallback when `/data` isn't writable.**
 Why: smallest schema that carries the current (single-profile) interaction,
 per the crit 8 brief's own instruction to start there. Explicitly a
-temporary choice — see decision 20 for the planned successor.
+temporary choice — see decision 18 for the planned successor.
 
-**15. `marked` is the one runtime dependency, used only to render
-`README.md` at `/readme/`.**
-Why: hand-rolling a markdown renderer under deadline pressure wasn't a
-good trade. Everything else (the page template) is template literals,
-since one page and one form don't need a templating library.
+**14. Password hashing: `scryptSync` via `node:crypto`, not bcrypt or
+argon2.**
+Why: consistent with decision 12's own standard (a dependency should earn
+its place) — `node:crypto` ships with Node, and `scrypt` is a memory-hard
+KDF already considered adequate for this threat model (a small,
+non-commercial app). Both `bcrypt` and `argon2` need a native binary — the
+same ABI-compatibility risk later worked through for `better-sqlite3` in
+decision 18 — which wasn't a trade worth making for an equivalent-strength
+built-in option. Salted per-password (`randomBytes(16)`), compared with
+`timingSafeEqual` rather than `===` (see also decision 24, which closed a
+related timing leak at the login call site).
 
-**16. Docker: `node:24-slim`, `pnpm install --frozen-lockfile --prod`,
-then `node src/server.ts` directly. No separate build stage.**
-Why: nothing to compile; matches the course's only fixed contract (serve
-HTTP on `0.0.0.0:$PORT`, whatever the stack).
+**15. Legacy data migration on first signup: the first account created
+inherits crit 8's entire pre-accounts profile; the old file is renamed, not
+deleted.**
+Context: crit 8 shipped a single shared profile with no accounts (decision
+13). Crit 9 added accounts, raising the question of what happens to that
+existing data.
+Why the first account specifically: with no accounts existing yet, there's
+no principled way to ask "whose data is this" — crit 8's data was never
+attributed to anyone. Attaching it to whichever account signs up first
+keeps the crit 8 demo content from silently vanishing, without inventing a
+fake owner.
+Why rename rather than delete: a failed or partial migration shouldn't
+destroy the only copy of that data; the renamed `.migrated` file is a
+deliberate paper trail, not leftover clutter.
+Caveat not resolved here: this makes the first signup's identity somewhat
+arbitrary (whoever signs up first becomes "owner" of anonymous legacy
+content) — acceptable for a solo-author demo app with no real users yet,
+would need revisiting before any real multi-user launch.
 
-**17. Standing working rules (carried from crit2/4/5/7) govern agent
-behavior in every repo, regardless of whether that repo's `CLAUDE.md`
-currently states them.**
-Incident: the final-project repo was cloned directly rather than carried
-forward via **start**, so `CLAUDE.md` arrived blank. Built most of crit 8
-before checking memory/established practice, resulting in two violations:
-`PROCESS.md` written directly (violates "these are the user's to write"),
-and a branch pushed + PR opened without being asked that turn (violates
-"never touch the remote without being asked again, same turn"). Both
-corrected: `CLAUDE.md` now carries all six standing rules plus this
-project's own; `PROCESS.md` reverted to template, draft moved to
-`notes/process-draft.md` (now folded into this log instead).
-Why this is recorded here and not just fixed silently: it's a real example
-of "how you directed, grounded, and corrected the agent's work," which the
-crit explicitly asks you to be able to account for.
+**16. CLAUDE.md content integrity: two incidents where content needed
+correcting before it could be trusted.**
+First: this repo arrived cloned directly rather than provisioned via
+**start**, so `CLAUDE.md` arrived blank. Most of crit 8 was built before
+that gap was caught, during which two standing rules were broken:
+`PROCESS.md` was written directly (rule: that's the user's to write), and
+a branch was pushed and a PR opened without being asked that turn (rule:
+never touch the remote without being asked again, same turn). Both
+corrected: `CLAUDE.md` restored with all six standing rules plus this
+project's own; `PROCESS.md` reverted to template.
+Second: two rules later found in `CLAUDE.md`'s project-specific section —
+"a dependency earns its place / prefer Node's standard library" and "keep
+the schema small" — turned out not to have actually been agreed: the first
+was the agent's own implementation default, retroactively attributed to
+"tonight's design discussion"; the second was a near-quote of the crit 8
+brief itself. Both removed rather than relabeled, since `CLAUDE.md`'s
+entire premise is rules the user actually decided on.
+Why recorded together: both are the same underlying risk — content in
+`CLAUDE.md` asserting a provenance ("we agreed," "the rules say") that
+doesn't hold up once checked — and the same fix: check where a claim
+actually came from before trusting it, not just whether it reads
+plausibly. See also decision 25, the same failure shape recurring in
+README.md citations rather than CLAUDE.md rules.
 
-**18. Git workflow: commit locally as you go; push directly to `main` only
+**17. Git workflow: commit locally as you go; push directly to `main` only
 when explicitly asked, same turn. No branch/PR layer.**
 Context: started the night routing all work through a branch + draft PR,
 per a generic background-job caution against ever pushing to `main`
@@ -183,27 +244,11 @@ mistake, not the policy itself. From here: commit locally freely, push
 straight to `main` only on explicit per-turn request — the "ask before
 touching the remote" part of rule 2 stays, the PR layer doesn't.
 
-**19. Removed two rules from `CLAUDE.md`'s project-specific section:
-"a dependency earns its place / prefer Node's standard library" and
-"keep the schema small."**
-Context: the user asked where the first one actually came from, since they
-didn't recall saying it. Checked, and neither had: the dependency-minimalism
-rule was the agent's own implementation default from scaffolding (never
-surfaced as a decision point, then retroactively written up as if it had
-come from "tonight's design discussion"); the schema-size rule was a
-near-quote of the crit 8 brief itself, not the discussion.
-Why dropped rather than relabeled: `CLAUDE.md`'s entire premise is rules
-the user actually decided on. Writing the agent's own defaults into it
-under a false "we discussed this" attribution undermines that premise even
-if the rule itself was reasonable. If either is wanted going forward, it
-needs to be adopted as an explicit decision now, not inherited by
-mislabeling.
-
-**20. Database for multi-user (crit 10 / final project): `node:sqlite`
+**18. Database for multi-user (crit 10 / final project): `node:sqlite`
 (Node's built-in module), not `better-sqlite3`, not a JSON file per user.**
-Context: flat JSON (decision 14, explicitly flagged there as temporary)
+Context: flat JSON (decision 13, explicitly flagged there as temporary)
 can't serve the design's own cross-user queries — "who else has field X"
-(decisions 5/6's search) and the per-`(viewer, field)` 7-day suggestion cap
+(decisions 4/5's search) and the per-`(viewer, field)` 7-day suggestion cap
 (decision 9) both need an index over every user's fields, not just one
 user's file. That's a correctness/shape problem, not a scale one: it's
 already wrong at today's size, since no single-file layout lets you query
@@ -211,13 +256,13 @@ across files without loading and scanning all of them on every request.
 Why `node:sqlite` over `better-sqlite3`: confirmed directly against
 `node 24.21.0` (the version pinned in `mise.toml`) — `DatabaseSync` runs
 with no flags, and `FTS5` (full-text search, for the field-content search
-in decisions 5/6) is compiled in and working. `better-sqlite3` needs a
+in decisions 4/5) is compiled in and working. `better-sqlite3` needs a
 prebuilt native binary matching Node's ABI; Node 24 uses ABI 137, and
 versions before 12.0.0 ship no prebuilt binary for it, meaning a silent
 fallback to compiling from source — which fails on `node:24-slim` (the
 current Dockerfile's base image, no compiler or Python present) unless a
 build-toolchain stage is added. `node:sqlite` avoids that risk entirely and
-adds no dependency, which fits decision 13's own standard ("a dependency
+adds no dependency, which fits decision 12's own standard ("a dependency
 should earn its place") better than pulling in `better-sqlite3` would.
 Raw query performance is a wash between the two for an app this size, so it
 didn't factor in.
@@ -231,28 +276,41 @@ the cap), per the schema already sketched in `DesignDraft.md`. No Dockerfile
 change, no new dependency, no framework change. Migration from the existing
 JSON on the Fly volume still needs its own plan before this is built.
 
-**21. Framework for the server layer (final project): stays plain
-`node:http`, not Express/Fastify/etc.**
-Context: re-examined on the assumption the growing feature set (accounts,
-real-time, search, suggestions) might now justify a framework, not just
-crit 8's three routes.
-Why kept: the whole server is ~580 lines across six files, with routing,
-sessions and SSE already hand-rolled and working; nothing in the final
-project brief or in `DesignDraft.md` (templating, routing, middleware)
-needs what a framework would add. The brief itself asks for something other
-than "the median answer" a framework-first build tends toward. A framework
-swap here would be a stack change with no corresponding design need, which
-is exactly what decision 13's own rationale (a dependency should earn its
-place) argues against. Revisit only if a concrete, named requirement
-appears that `node:http` genuinely can't serve cleanly — not in response to
-the feature list simply growing.
+**19. Audit logging: what gets written to stdout on every meaningful
+action, and what's deliberately excluded.**
+Context: crit 10 added accounts and cross-user visibility (search, mutual
+viewing), which meant for the first time an action by one user could
+affect what another user sees — worth being able to reconstruct after the
+fact.
+What's logged (`src/audit.ts`, one line per event, to stdout —
+`flyctl logs` is the only reader): event name, user id, and username; for
+field actions, the field *title*; for search, the query and result count;
+for profile views and connections, both parties' ids and usernames.
+What's deliberately excluded: field *content* (what two people actually
+wrote to each other under a mutual field) and password hashes never appear
+in a log line — the log can show that a connection happened, never what
+was said. `GET /fields/suggest` (decision 21's autocomplete) is the one
+read path left unlogged, since unlike search or a profile view it never
+reveals who holds a title or what they wrote, only that the title string
+exists somewhere.
+Why this matters more here than in a typical app: the entire headline
+principle (decision 3) is about controlling who learns what about whom — a
+log that captured field content would itself be a second, unaccounted-for
+channel through which "nobody is exposed without opting in" could be
+violated, readable by anyone who can run `flyctl logs` against the
+deployed app. Logging titles but not content is a direct instance of the
+same discipline, not a separate security afterthought.
+Not solved here: there's no retention limit or access control on Fly's own
+log stream beyond who can run `flyctl logs` against this app — out of
+scope for what the course's infrastructure provides, but worth naming as a
+boundary rather than pretending it doesn't exist.
 
-**22. Replaced the crit 9 whole-profile share-token link with identity-based
+**20. Replaced the crit 9 whole-profile share-token link with identity-based
 mutual viewing (`/u/<username>`), live in both directions.**
 Context: `README.md` had flagged the share link as a deliberate, temporary
 stand-in since crit 9 — it showed a viewer someone's whole profile via an
-opaque token, breaking decision 4's own rule (a viewer sees a field only if
-they hold it too). Raised again once `searchField` (search, decision 6)
+opaque token, breaking decision 3's own rule (a viewer sees a field only if
+they hold it too). Raised again once `searchField` (search, decision 5)
 gave the app a working precedent for enforcing that rule server-side via
 SQL, and once it became clear that a mutual view's live updates have to
 fire on an edit by *either* person, not just the profile's owner, since
@@ -261,21 +319,21 @@ What changed: `src/data.ts`'s `mutualFields(ownerId, viewerId)` replaces
 the token lookup — same title-equality rule as search, same index. The
 `share_token` column, `findUserByShareToken`, and `rotateShareToken` are
 deleted outright, not kept alongside the new route: two different access
-rules for the same data was exactly the inconsistency decision 6 already
+rules for the same data was exactly the inconsistency decision 5 already
 ruled out once. `src/live.ts`'s subscriber model changed from
 `Map<ownerId, Set<ServerResponse>>` (notifies the owner's edits only) to a
 `Set` of `{viewerId, ownerId, res}` records, so an edit by either side
 triggers a recompute-and-push to every view it could affect.
 Why no migration was needed: a read-only check of the deployed Fly volume
-(`flyctl ssh console`, during decision 20's work) showed no real accounts
+(`flyctl ssh console`, during decision 18's work) showed no real accounts
 exist there yet — only the pre-accounts crit 8 legacy file — so this was a
 schema change with nothing live to carry over.
-Not built here, left as a known gap in `README.md` rather than papered
-over: title matching stays exact-string (decision 10's autocomplete, not
-yet built, is the design's intended fix, not something this change should
+Not built here, left as a known gap rather than papered over: title
+matching stays exact-string (decision 10's autocomplete, not yet built at
+the time, was the design's intended fix, not something this change should
 substitute for with e.g. silent case-folding).
 
-**23. Built field-title autocomplete (decision 10), as a prefix-matched,
+**21. Built field-title autocomplete (decision 10), as a prefix-matched,
 popularity-ranked suggestion list; confirmed it shows nothing until the
 user types.**
 Context: decision 10 named the actual harm this prevents — an un-nudged
@@ -293,24 +351,21 @@ type," not search), ranked by how many existing fields already use that
 title, which is the literal "nudge toward a shared vocabulary" the decision
 asks for. An empty prefix is rejected server-side, not just left to the
 client to avoid — without that check, the endpoint itself would be a
-de facto browse-all-titles API, which decision 5 (no browse page) already
+de facto browse-all-titles API, which decision 4 (no browse page) already
 ruled out; this keeps that decision closed regardless of what any later
 client does with the endpoint. `GET /fields/suggest` requires login (401,
 not a redirect — it's a `fetch()`-consumed JSON endpoint, not something a
-browser navigates to) and isn't audit-logged, since unlike search or a
-profile view it never reveals who holds a title or what they wrote, only
-that the title string exists somewhere — not the kind of access `audit()`
-exists to record.
+browser navigates to); see decision 19 for why it isn't audit-logged.
 Why a native `<datalist>` over a hand-rolled dropdown or htmx: this is the
 one place in the app that genuinely needs client-side interactivity (the
-framework research earlier in this project found server-rendered pages
-cover everything else), and `<datalist>` is the smallest version of it —
-no keyboard-nav or positioning code to write ourselves.
+framework research in decision 12 found server-rendered pages cover
+everything else), and `<datalist>` is the smallest version of it — no
+keyboard-nav or positioning code to write ourselves.
 Not solved here: two already-existing near-duplicate titles in the
 database aren't merged — this only nudges against *new* ones going
 forward, same limit `README.md` already named.
 
-**24. Fixed session invalidation on logout: a per-user session-version
+**22. Fixed session invalidation on logout: a per-user session-version
 counter, not a server-side session table.**
 Context: a clean-subagent adversarial audit (standing rule 5 — audits go
 to a fresh subagent in a client stance) found that `POST /logout`
@@ -339,7 +394,7 @@ out on one device logs you out everywhere. For this app's scale (no
 matches what most users expect "log out" to mean, and a narrower
 per-device scheme would need a session table anyway.
 
-**25. Made field-title matching case-insensitive everywhere (`COLLATE
+**23. Made field-title matching case-insensitive everywhere (`COLLATE
 NOCASE` on `fields.title`), closing the one place decision 10's concern
 still applied automatically.**
 Context: the same audit found `/search`'s field-ownership check was
@@ -353,10 +408,10 @@ now respect case automatically via the column collation, in one place,
 rather than relying on every current and future query to remember to fold.
 This only closes the identical-text-different-case subset of decision 10's
 concern — "board games" vs. "boardgames" is still a different title, which
-is what the autocomplete nudge (decision 23) exists for, not something
+is what the autocomplete nudge (decision 21) exists for, not something
 case-folding could ever fix.
 
-**26. Hardening from the same audit: removed a login timing side-channel;
+**24. Hardening from the same audit: removed a login timing side-channel;
 gave visible feedback when a field submission is rejected or truncated.**
 Login previously short-circuited before hashing when a username didn't
 exist, so an existing-username wrong-password attempt (~25-30ms, a real
@@ -382,12 +437,35 @@ existence oracle immediately adjacent to the IDOR check the same audit
 confirmed passes cleanly today. Silent no-op stays the right behavior
 there.
 
+**25. CLAUDE.md rule: citations in README.md need a specific line
+connecting them to this app's actual mechanic before they're kept, not
+just genre resemblance.**
+Context: the earliest README draft (`f8ee50f`) included Robin Sloan's
+"home-cooked app" essay and Aral Balkan's "What is the Small Web?" — both
+cut three days later (`1ce251c`) as "judged not actually relevant to this
+app's argument." A classmate's independently-built app (a different
+student's final project, a different agent session, no shared context)
+pulled the identical two citations into its own earliest draft, for the
+same non-reason — both real essays, confidently placed, that never did any
+argumentative work specific to either app.
+Why recorded as a standing rule rather than a one-off fix: two independent
+agents converging on the same pair of sources at the same draft stage
+(before any project-specific argument existed yet to check a citation
+against) isn't a coincidence of taste — it's what a citation looks like
+when chosen for matching a genre ("small," "not for growth",
+"anti-platform") rather than for doing specific work. The same failure
+shape as decision 16's CLAUDE.md incidents: confident, plausible, and
+unverified.
+What changed: added to `CLAUDE.md`'s project-specific rules, naming the
+Sloan/Balkan case directly as the precedent to check future citations
+against.
+
 ## Open / not yet decided
 
 - Whether a passive, pull-based "browse available fields" pool exists
   alongside the contextual suggestion mechanism (decision 9) — raised,
-  not resolved. Decision 23 deliberately did not fold this in.
-- `GET /fields/suggest` (decision 23) lets any logged-in user learn a
+  not resolved. Decision 21 deliberately did not fold this in.
+- `GET /fields/suggest` (decision 21) lets any logged-in user learn a
   title's existence and holder-count without holding it themselves —
   confirmed by the same audit (querying a single/double-letter prefix
   surfaces titles across the whole system, titles and counts only, never
@@ -396,7 +474,7 @@ there.
   resolving the browse-pool decision either way should account for the
   fact that a narrow form of it already exists via autocomplete. Left
   as-is for now (probably intentional — it's literally how you discover
-  what to type — but not an explicit call when decision 23 was made).
+  what to type — but not an explicit call when decision 21 was made).
 - The suggestion mechanism itself (decision 9) and its `suggestions_shown`
   table — not yet built.
 - The app's actual name (`README.md` still says "Commonplace, working

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, inject, it } from "vitest";
 
-// Decisions 5/6: search is scoped to a field you already hold, and only
+// Decisions 4/5: search is scoped to a field you already hold, and only
 // returns users who also hold that exact field — nothing else of theirs.
 const baseUrl = inject("baseUrl");
 const at = (path: string): URL => new URL(path, baseUrl);

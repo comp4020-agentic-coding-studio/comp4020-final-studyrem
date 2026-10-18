@@ -138,7 +138,7 @@ ${items || "<li>No fields yet &mdash; add the first one.</li>"}
 }
 
 // Read-only. Shows only the fields the viewer also holds themselves
-// (data.ts: mutualFields) — decision 4, enforced server-side. The list is
+// (data.ts: mutualFields) — decision 3, enforced server-side. The list is
 // server-rendered so it works without JS; the script then keeps it current
 // from the event stream, writing user text only through textContent.
 export function renderMutualProfile(username: string, fields: Field[]): string {
@@ -175,7 +175,7 @@ ${items}
 
 // Scoped to one field title the searcher already holds (checked in
 // server.ts, not here). No link out to a full profile: that would leak
-// more than the one field decision 6 says this page may share.
+// more than the one field decision 5 says this page may share.
 export function renderSearch(title: string, query: string, results: FieldMatch[]): string {
   const items = results
     .map((r) => `<li><h2>${escapeHtml(r.username)}</h2><p>${escapeHtml(r.content)}</p></li>`)

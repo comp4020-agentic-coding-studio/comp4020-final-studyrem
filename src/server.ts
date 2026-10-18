@@ -181,7 +181,7 @@ const server = createServer((req, res) => {
         }
         const title = (url.searchParams.get("title") ?? "").trim();
         const query = (url.searchParams.get("q") ?? "").trim();
-        // Decision 6: scoped to a field you already hold — checked here,
+        // Decision 5: scoped to a field you already hold — checked here,
         // server-side, not just hidden in the UI. Case-insensitive, matching
         // the fields.title column's COLLATE NOCASE (this check runs in JS,
         // not SQL, so it needs its own fold).

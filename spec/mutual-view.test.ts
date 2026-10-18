@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, inject, it } from "vitest";
 
-// Decision 4, live: a viewer sees a field on someone else's profile only if
+// Decision 3, live: a viewer sees a field on someone else's profile only if
 // they hold that same field themselves, and an already-open view refreshes
 // within ~1s when EITHER side's matching fields change — not just the
 // owner's, since what's shown depends on both people's data.

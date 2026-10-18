@@ -1,6 +1,6 @@
 // Accounts and their profiles, in SQLite on the Fly volume (see db.ts). Each
 // user owns an ordered list of fields; another user sees a field only if
-// they hold that same field themselves (decision 4) — enforced in
+// they hold that same field themselves (decision 3) — enforced in
 // mutualFields() and searchField(), not by any token or ACL on the row.
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, renameSync } from "node:fs";
@@ -173,7 +173,7 @@ export function removeField(userId: string, fieldId: string): Field[] {
   return loadFields(userId);
 }
 
-// Decision 4, enforced directly: the fields a viewer may see on someone
+// Decision 3, enforced directly: the fields a viewer may see on someone
 // else's profile are exactly the ones whose title the viewer also holds.
 export function mutualFields(ownerId: string, viewerId: string): Field[] {
   const rows = db
@@ -194,7 +194,7 @@ export interface TitleSuggestion {
 // Prefix match, ranked by how many existing fields already use that title —
 // decision 10's "nudge toward a shared vocabulary." An empty prefix returns
 // nothing: without this check the endpoint would be a de facto browse-all
-// list of every title in the system, which decision 5 (no browse page)
+// list of every title in the system, which decision 4 (no browse page)
 // already ruled out.
 export function matchingTitles(prefix: string, limit = 8): TitleSuggestion[] {
   if (prefix === "") return [];
@@ -217,7 +217,7 @@ export interface FieldMatch {
 }
 
 // Scoped to one field title, excludes the searcher's own fields. Only
-// username + the matching field's content ever come back — decision 6
+// username + the matching field's content ever come back — decision 5
 // shares exactly that one field, nothing else of the matched person.
 export function searchField(title: string, query: string, excludeUserId: string): FieldMatch[] {
   const escaped = query.replace(/[\\%_]/g, (c) => `\\${c}`);
