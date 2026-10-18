@@ -1,17 +1,45 @@
 # Process overview
 
-This week's build is the core interaction extracted from the idea, which is a profile-building page that lets users add fields to a profile to describe themselves. Other parts of the app, as well as the core idea itself, were discussed with the agent, but implementing them isn't part of this week's work.
+This week's work centered on the user story in `README.md` — writing a
+concrete protagonist (Priya) to ground the app's headline principle, then
+using her to find and fix places where the rest of the README stated
+principles without actually earning them. The agent also shipped real
+features in parallel (search, mutual-field viewing, the suggestion
+mechanism, hardening from an adversarial audit); this account is about the
+README/design work, since that's where the week's actual judgment calls
+were.
 
-The stack is plain Node and TypeScript, and the schema is currently a plain JSON file, since this week only needs one core interaction, with no need yet for multiple profiles or a search feature. The agent also replaced the course's placeholder `Dockerfile` with one that actually builds and runs this app, rather than serving a static page. The agent analyzed what this week's crit actually needed, and we reached agreement through a few rounds of conversation.
+**The citation pattern.** During crit 8, the agent drafted `README.md`
+unprompted — I hadn't asked for one yet. Its "What shaped this" section
+cited two essays: Robin Sloan's "home-cooked app" and Aral Balkan's "What is
+the Small Web?" ([`f8ee50f`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/f8ee50f)).
+I cut both days later, judging neither actually argued anything about this
+app ([`1ce251c`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/1ce251c))
+— at the time, just a bad call, not a pattern.
 
-In this week's process, the agent's attention seemed a little off: it tended to make assumptions based on partial information instead of checking its own memory and guiding file (`CLAUDE.md` in this case), which resulted in it falling back on generic defaults or asserting things that were never actually confirmed by me. This warned me that agents can be unreliable in the worst case, and I came up with four different checks to bring the agent back on track:
+The pattern surfaced later, when the teaching team shared a one-shot
+comparison sample: shitao's `riff8`, built independently with no connection
+to mine. Its earliest README cited the identical two essays, at the
+identical stage — the very first draft, before any real argument existed.
+Two unrelated agents landing on the same pair isn't a coincidence; I only
+caught it because I had something independent to compare against.
 
-**Ask what happened.** I asked the agent to scaffold this week's build, expecting it to lay out a plan first for my sign-off, which is one of my standing rules for anything touching multiple files. Instead, it went straight to a finished result: the server, the Dockerfile, the README, already committed and pushed. That mismatch made me check whether the rules were even in place at all, and that's when CLAUDE.md turned out to have arrived blank, with most of the week's work already built before the gap was caught. By then the agent had broken two of the rules by itself: writing PROCESS.md directly, and pushing a branch and opening a pull request without being asked. Both were reverted and the rules restored ([`36ef3b5`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/36ef3b5878ada0549c51ea2a6159f1379bf0a7c2), [`cf356a6`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/cf356a600a8c783bf93c43151966763d69fc6c04)). Moving beyond just fixing this one repo, I had the agent set up an ancestor CLAUDE.md at the course-work root, so the rules load automatically for any repo under it from now on, regardless of how that repo was created. In this case, ask the agent what it is doing and if the expected things are actually there bring back the missing attention.
+The earlier version of our own user story read hollow to me, so I asked the
+agent to refine and dive deeper into it. During that pass, one of its fixes
+overclaimed what a citation actually argued — similar to, though not the
+same as, the Sloan/Balkan issue. That resemblance is what made me ask "why"
+directly. The answer: both cases are a citation chosen because it fits the
+genre the app resembles, not because anyone checked it argued something
+specific to this app.
 
-**Ask where it came from.** While working through the CLAUDE.md gap, the agent also mentioned it had written a new section into the file describing project-specific rules which was something I hadn't asked for, and triggered the same "what" check again: what exactly had been added. Reading through it, one line stood out: "prefer Node's standard library" attributed to "tonight's design discussion", which wasn't in my own memory of the discussion. So I asked directly where it actually came from. That question forced the agent to separate what had actually been confirmed between us from what had only ever been discussed, or assumed, without confirmation: it turned out the line was the agent's own unstated implementation default, written up afterward as if we had agreed on it together. A second line turned out to be a near-quote of the crit brief, not the discussion either. Both were removed rather than relabeled ([`da65cda`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/da65cda92de70ea5fbfede2f68257c0a8de5d369)). This "where" question forced the agent not to assume but to look for evidence.
+That became a standing rule, not a one-off fix: `CLAUDE.md` now requires any
+README citation to connect to this app's actual mechanic, naming
+Sloan/Balkan as the precedent ([`1f4ebf3`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/1f4ebf3)).
 
-**Ask why it happened.** All of the agent's work was going through a branch and a draft pull request, which I had never asked for and didn't recognize from any earlier crit. I asked why directly. The agent explained it was following a general caution against ever pushing straight to `main`, meant for an agent working alone on a shared repository. That didn't apply here because this is my own repository and there is no one else whose work an unreviewed push could damage. Every other crit I've built, crit7 included, went straight to `main` the whole time. Once that mismatch was named, the workflow changed: commits made locally, pushed to `main` only when I ask for it, with no branch or pull request in between. The shape of the commit history after that point is the visible record of the change. This matters most in the worst case: when the agent makes a decision on its own, without asking or recording it anywhere. Asking "why" as a habit, not just when something already looks wrong, is what catches that.
-
-**Compare against a build I already know works (or maybe not work).** The agent flagged the Docker build as unverified and suggested I install Docker myself to check it. Something felt off: not a specific memory, but a structural one: crit7 and this final project run on the same infrastructure, Fly and Docker both. If missing local Docker were really a problem, it should have shown up in crit7 too, but obviously crit7 deployed successfully without me ever installing Docker locally. I pointed that out directly: same setup, no issue there. That's what triggered the actual investigation. The result turned out to be that the agent had already read this course's CI configuration, which builds the Docker image on GitHub's own servers, and the deploy step, which builds it again on Fly's remote servers, neither touches a student's machine. It had the information needed to know its own warning was overstated, and never connected it. This one has no commit behind it and the fix was a note to itself about reasoning through this course's deploy pipeline, not a code change, so it's asserted here rather than shown. I don't actually know how Fly or Docker work in any depth. What caught this wasn't technical expertise, it was partial information: knowing roughly what a working (not working) version should look like, from having been through it once before.
-
-None of this means the agent built badly. The actual code worked every time, and none of these four checks slowed the real work down. What it means is that an agent's confidence, or its hedging, isn't something to trust on its own terms. The four checks above are different versions of the same habit: check what actually happened, check where a claim actually came from, check why a decision was actually made, and check it against something already known to work / not work. None of them require already knowing the right answer going in, they only require not accepting an explanation as settled before it has actually been checked.
+None of this means the agent worked badly — the feature work shipped
+cleanly all week, and none of this slowed it down. What it means is that a
+citation reading as informed isn't the same as it being checked: "this
+sounds like the kind of thing that shapes this kind of app" and "this
+specific source argues something this specific app needs" are different
+claims, and only asking "why does this keep happening" surfaces which one
+actually happened.
