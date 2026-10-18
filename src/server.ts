@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFileSync } from "node:fs";
 import { marked } from "marked";
+import { audit } from "./audit.ts";
 import {
   addField,
   createUser,
@@ -73,6 +74,7 @@ const server = createServer((req, res) => {
         if (path === "/signup") {
           try {
             const user = createUser(username, password);
+            audit("signup", { userId: user.id, username: user.username });
             return redirect(res, "/me", sessionCookie(req, user.id));
           } catch (err) {
             return html(res, 400, renderLogin((err as Error).message));
@@ -80,12 +82,16 @@ const server = createServer((req, res) => {
         }
         const user = findUserByUsername(username);
         if (!user || !verifyPassword(user, password)) {
+          audit("login_failed", { username });
           return html(res, 401, renderLogin("That username and password don't match."));
         }
+        audit("login", { userId: user.id, username: user.username });
         return redirect(res, "/me", sessionCookie(req, user.id));
       }
 
       if (method === "POST" && path === "/logout") {
+        const user = currentUser(req);
+        if (user) audit("logout", { userId: user.id, username: user.username });
         return redirect(res, "/", clearedCookie(req));
       }
 
@@ -93,6 +99,7 @@ const server = createServer((req, res) => {
         const user = currentUser(req);
         if (!user) {
           if (method === "GET") return redirect(res, "/");
+          audit("unauthorized", { path, method });
           res.writeHead(401, { "Content-Type": "text/plain" });
           return res.end("log in first");
         }
@@ -106,19 +113,26 @@ const server = createServer((req, res) => {
           const params = new URLSearchParams(await readBody(req));
           const title = (params.get("title") ?? "").trim().slice(0, 80);
           const content = (params.get("content") ?? "").trim().slice(0, 2000);
-          if (title && content) publish(user.id, addField(user.id, title, content));
+          if (title && content) {
+            publish(user.id, addField(user.id, title, content));
+            audit("field_added", { userId: user.id, username: user.username, title });
+          }
           return redirect(res, "/me");
         }
 
         const del = method === "POST" && path.match(/^\/me\/fields\/([^/]+)\/delete$/);
         if (del) {
-          publish(user.id, removeField(user.id, decodeURIComponent(del[1])));
+          const fieldId = decodeURIComponent(del[1]);
+          const title = loadFields(user.id).find((f) => f.id === fieldId)?.title;
+          publish(user.id, removeField(user.id, fieldId));
+          audit("field_removed", { userId: user.id, username: user.username, title });
           return redirect(res, "/me");
         }
 
         if (method === "POST" && path === "/me/share") {
           revoke(user.id);
           rotateShareToken(user.id);
+          audit("share_rotated", { userId: user.id, username: user.username });
           return redirect(res, "/me");
         }
       }
@@ -127,7 +141,11 @@ const server = createServer((req, res) => {
       if (share) {
         const owner = findUserByShareToken(share[1]);
         if (!owner) return html(res, 404, renderNotFound());
-        if (share[2]) return subscribe(owner.id, res, loadFields(owner.id));
+        if (share[2]) {
+          audit("share_connected", { ownerId: owner.id, ownerUsername: owner.username });
+          return subscribe(owner.id, res, loadFields(owner.id));
+        }
+        audit("share_viewed", { ownerId: owner.id, ownerUsername: owner.username });
         return html(res, 200, renderShared(owner.username, loadFields(owner.id)));
       }
 
