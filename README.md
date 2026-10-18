@@ -5,6 +5,34 @@ say about it. You see someone else's content in a field only if you've
 added that field yourself. There's no feed and no browsing — you reach
 someone through a link, or by searching inside a field you already keep.*
 
+Take Priya, three weeks into a job in a city where she doesn't know anyone
+yet. University gave her that without trying — a dorm floor, a seminar, the
+same five people in the same lab twice a week — friendship that took no
+deliberate effort because proximity did the work. A workplace doesn't supply
+that the same way, and an apartment building where nobody's home during the
+day doesn't either; the people she'd want to meet aren't somewhere she passes
+twice a day anymore, they're somewhere she'd have to go looking.
+"So what do you do for fun?" from someone she just met at a work thing has
+never worked for her either — it asks for an answer before either of them has
+actually said anything real yet.
+
+She tried a profile app once — not even a romantic one — and deleted it
+inside a week. It wasn't that she had nothing to put on it. It was that the
+moment it went live, she was visible to anyone who opened the link,
+performing an introduction to people who hadn't shown her anything back, for
+as long as the profile stayed up. Being looked at before anyone had earned it
+was the cost, not the writing.
+
+So here: Priya adds "co-op games" as a field — not posted, not sent to
+anyone, just named. She picked it because showing up to actually do something
+with someone has always felt easier than having to produce things to say
+about herself first. Nothing happens until someone else has written their
+own "co-op games" field. Only then can either of them see what the other
+wrote there, and only there. The field does what the hallway used to do —
+puts her in the same small, named room as someone else without requiring
+either of them to perform an opening line — and neither of them was visible
+to the other until both already were.
+
 ## What it does
 
 Most profile pages show the same thing to everyone who opens them. This one
