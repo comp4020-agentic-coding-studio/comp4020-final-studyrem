@@ -156,8 +156,9 @@ Reconfirmed (final project): re-examined on the assumption the growing
 feature set (accounts, real-time, search, suggestions) might now justify a
 framework. Kept: the whole server is ~580 lines across six files, with
 routing, sessions and SSE already hand-rolled and working; nothing in the
-final project brief or in `DesignDraft.md` (templating, routing,
-middleware) needs what a framework would add. A framework swap here would
+final project brief or in `DesignDraft.md` (working notes kept outside
+this repo, like the build-status notes README.md points to — templating,
+routing, middleware) needs what a framework would add. A framework swap here would
 be a stack change with no corresponding design need, which is exactly what
 this decision's own rationale (a dependency should earn its place) argues
 against. Revisit only if a concrete, named requirement appears that
@@ -272,7 +273,8 @@ release. Not a live risk here since the Node version is pinned in
 `mise.toml`; would need re-checking if that pin is ever bumped.
 Scope of the resulting change: replace `src/data.ts`'s JSON-file storage
 with `node:sqlite` tables (users, fields, and a suggestions-shown table for
-the cap), per the schema already sketched in `DesignDraft.md`. No Dockerfile
+the cap), per the schema already sketched in `DesignDraft.md` (also outside
+this repo, not something a reader here can open directly). No Dockerfile
 change, no new dependency, no framework change. Migration from the existing
 JSON on the Fly volume still needs its own plan before this is built.
 
