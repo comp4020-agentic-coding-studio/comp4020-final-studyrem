@@ -65,7 +65,7 @@ ${error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : ""}
 const fieldItem = (f: Field, extra = ""): string =>
   `<li><h2>${escapeHtml(f.title)}</h2><p>${escapeHtml(f.content)}</p>${extra}</li>`;
 
-export function renderOwner(username: string, fields: Field[], shareUrl: string | null): string {
+export function renderOwner(username: string, fields: Field[], profileUrl: string): string {
   const items = fields
     .map((f) =>
       fieldItem(
@@ -75,12 +75,6 @@ export function renderOwner(username: string, fields: Field[], shareUrl: string 
       ),
     )
     .join("\n");
-  const share = shareUrl
-    ? `<p>Anyone with this link can see your whole profile, read-only, and watch it change live:</p>
-  <input readonly value="${escapeHtml(shareUrl)}" aria-label="Your share link" onfocus="this.select()" />
-  <button type="submit">Regenerate link (the old one stops working)</button>`
-    : `<p>You have no share link yet. Nobody can see your profile until you make one.</p>
-  <button type="submit">Make a share link</button>`;
   return layout(
     "Your profile — Commonplace",
     `<header>
@@ -95,28 +89,34 @@ export function renderOwner(username: string, fields: Field[], shareUrl: string 
 <ul>
 ${items || "<li>No fields yet &mdash; add the first one.</li>"}
 </ul>
-<form class="share" method="post" action="/me/share">
-  <h2>Share link</h2>
-  ${share}
-</form>
+<div class="share">
+  <h2>Your profile link</h2>
+  <p>Anyone who's logged in and has added a field you also hold sees that
+  field, live, if they visit this link. Nobody sees anything you don't
+  already share with them:</p>
+  <input readonly value="${escapeHtml(profileUrl)}" aria-label="Your profile link" onfocus="this.select()" />
+</div>
 <p><a href="/readme/">What good means for this app</a></p>`,
   );
 }
 
-// Read-only. The list is server-rendered so it works without JS; the script
-// then keeps it current from the event stream, writing user text only through
-// textContent.
-export function renderShared(username: string, fields: Field[]): string {
+// Read-only. Shows only the fields the viewer also holds themselves
+// (data.ts: mutualFields) — decision 4, enforced server-side. The list is
+// server-rendered so it works without JS; the script then keeps it current
+// from the event stream, writing user text only through textContent.
+export function renderMutualProfile(username: string, fields: Field[]): string {
   const items = fields.map((f) => fieldItem(f)).join("\n");
   return layout(
     `${escapeHtml(username)} — Commonplace`,
     `<h1>${escapeHtml(username)}</h1>
+<p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>You don't share any fields with ${escapeHtml(username)} yet — add a field they also have to see it.</p>
 <ul id="fields">
-${items || '<li class="empty">Nothing here yet.</li>'}
+${items}
 </ul>
 <script>
 (() => {
   const list = document.getElementById("fields");
+  const emptyNote = document.getElementById("empty-note");
   const source = new EventSource(location.pathname.replace(/\\/$/, "") + "/events");
   source.addEventListener("fields", (e) => {
     const fields = JSON.parse(e.data);
@@ -129,19 +129,7 @@ ${items || '<li class="empty">Nothing here yet.</li>'}
       li.append(h, p);
       return li;
     }));
-    if (fields.length === 0) {
-      const li = document.createElement("li");
-      li.className = "empty";
-      li.textContent = "Nothing here yet.";
-      list.append(li);
-    }
-  });
-  source.addEventListener("revoked", () => {
-    source.close();
-    const main = document.querySelector("main");
-    const p = document.createElement("p");
-    p.textContent = "This link is no longer active.";
-    main.replaceChildren(p);
+    emptyNote.hidden = fields.length > 0;
   });
 })();
 </script>`,
@@ -176,7 +164,7 @@ ${resultsBlock}
 }
 
 export function renderNotFound(): string {
-  return layout("Not found — Commonplace", `<h1>Not found</h1><p>This link isn't active.</p>`);
+  return layout("Not found — Commonplace", `<h1>Not found</h1><p>Nobody's at this link.</p>`);
 }
 
 export function renderReadme(bodyHtml: string): string {

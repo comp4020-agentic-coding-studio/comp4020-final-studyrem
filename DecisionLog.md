@@ -247,12 +247,42 @@ place) argues against. Revisit only if a concrete, named requirement
 appears that `node:http` genuinely can't serve cleanly — not in response to
 the feature list simply growing.
 
+**22. Replaced the crit 9 whole-profile share-token link with identity-based
+mutual viewing (`/u/<username>`), live in both directions.**
+Context: `README.md` had flagged the share link as a deliberate, temporary
+stand-in since crit 9 — it showed a viewer someone's whole profile via an
+opaque token, breaking decision 4's own rule (a viewer sees a field only if
+they hold it too). Raised again once `searchField` (search, decision 6)
+gave the app a working precedent for enforcing that rule server-side via
+SQL, and once it became clear that a mutual view's live updates have to
+fire on an edit by *either* person, not just the profile's owner, since
+what's shown depends on both people's fields.
+What changed: `src/data.ts`'s `mutualFields(ownerId, viewerId)` replaces
+the token lookup — same title-equality rule as search, same index. The
+`share_token` column, `findUserByShareToken`, and `rotateShareToken` are
+deleted outright, not kept alongside the new route: two different access
+rules for the same data was exactly the inconsistency decision 6 already
+ruled out once. `src/live.ts`'s subscriber model changed from
+`Map<ownerId, Set<ServerResponse>>` (notifies the owner's edits only) to a
+`Set` of `{viewerId, ownerId, res}` records, so an edit by either side
+triggers a recompute-and-push to every view it could affect.
+Why no migration was needed: a read-only check of the deployed Fly volume
+(`flyctl ssh console`, during decision 20's work) showed no real accounts
+exist there yet — only the pre-accounts crit 8 legacy file — so this was a
+schema change with nothing live to carry over.
+Not built here, left as a known gap in `README.md` rather than papered
+over: title matching stays exact-string (decision 10's autocomplete, not
+yet built, is the design's intended fix, not something this change should
+substitute for with e.g. silent case-folding).
+
 ## Open / not yet decided
 
 - Whether a passive, pull-based "browse available fields" pool exists
   alongside the contextual suggestion mechanism (decision 9) — raised,
   not resolved.
-- Exact multi-user identity/account mechanism for crit 9 — not yet
-  discussed at all.
+- The suggestion mechanism itself (decision 9) and its `suggestions_shown`
+  table — not yet built.
+- Autocomplete on field titles while creating one (decision 10) — not yet
+  built; also the reason near-duplicate titles currently just don't match.
 - The app's actual name (`README.md` still says "Commonplace, working
   title").

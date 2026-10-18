@@ -14,7 +14,6 @@ db.exec(`
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    share_token TEXT UNIQUE,
     created_at TEXT NOT NULL
   );
 `);

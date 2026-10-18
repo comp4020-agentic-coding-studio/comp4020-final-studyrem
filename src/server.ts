@@ -10,17 +10,16 @@ import {
   addField,
   createUser,
   findUserById,
-  findUserByShareToken,
   findUserByUsername,
   loadFields,
+  mutualFields,
   removeField,
-  rotateShareToken,
   searchField,
   verifyPassword,
 } from "./data.ts";
 import type { User } from "./data.ts";
-import { publish, revoke, subscribe } from "./live.ts";
-import { renderLogin, renderNotFound, renderOwner, renderReadme, renderSearch, renderShared } from "./page.ts";
+import { notifyFieldsChanged, subscribeMutualView } from "./live.ts";
+import { renderLogin, renderMutualProfile, renderNotFound, renderOwner, renderReadme, renderSearch } from "./page.ts";
 import { clearedCookie, sessionCookie, sessionUserId } from "./session.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -51,9 +50,9 @@ const currentUser = (req: IncomingMessage): User | undefined => {
   return id ? findUserById(id) : undefined;
 };
 
-function shareUrl(req: IncomingMessage, token: string): string {
+function profileUrl(req: IncomingMessage, username: string): string {
   const proto = req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
-  return `${proto}://${req.headers.host ?? "localhost"}/s/${token}`;
+  return `${proto}://${req.headers.host ?? "localhost"}/u/${encodeURIComponent(username)}`;
 }
 
 const server = createServer((req, res) => {
@@ -106,8 +105,7 @@ const server = createServer((req, res) => {
         }
 
         if (method === "GET" && path === "/me") {
-          const link = user.shareToken ? shareUrl(req, user.shareToken) : null;
-          return html(res, 200, renderOwner(user.username, loadFields(user.id), link));
+          return html(res, 200, renderOwner(user.username, loadFields(user.id), profileUrl(req, user.username)));
         }
 
         if (method === "POST" && path === "/me/fields") {
@@ -115,7 +113,8 @@ const server = createServer((req, res) => {
           const title = (params.get("title") ?? "").trim().slice(0, 80);
           const content = (params.get("content") ?? "").trim().slice(0, 2000);
           if (title && content) {
-            publish(user.id, addField(user.id, title, content));
+            addField(user.id, title, content);
+            notifyFieldsChanged(user.id);
             audit("field_added", { userId: user.id, username: user.username, title });
           }
           return redirect(res, "/me");
@@ -125,15 +124,9 @@ const server = createServer((req, res) => {
         if (del) {
           const fieldId = decodeURIComponent(del[1]);
           const title = loadFields(user.id).find((f) => f.id === fieldId)?.title;
-          publish(user.id, removeField(user.id, fieldId));
+          removeField(user.id, fieldId);
+          notifyFieldsChanged(user.id);
           audit("field_removed", { userId: user.id, username: user.username, title });
-          return redirect(res, "/me");
-        }
-
-        if (method === "POST" && path === "/me/share") {
-          revoke(user.id);
-          rotateShareToken(user.id);
-          audit("share_rotated", { userId: user.id, username: user.username });
           return redirect(res, "/me");
         }
       }
@@ -158,16 +151,29 @@ const server = createServer((req, res) => {
         return html(res, 200, renderSearch(title, query, results));
       }
 
-      const share = method === "GET" && path.match(/^\/s\/([A-Za-z0-9_-]+)(\/events)?\/?$/);
-      if (share) {
-        const owner = findUserByShareToken(share[1]);
+      const profile = method === "GET" && path.match(/^\/u\/([^/]+)(\/events)?\/?$/);
+      if (profile) {
+        const viewer = currentUser(req);
+        if (!viewer) return redirect(res, "/");
+        const owner = findUserByUsername(decodeURIComponent(profile[1]));
         if (!owner) return html(res, 404, renderNotFound());
-        if (share[2]) {
-          audit("share_connected", { ownerId: owner.id, ownerUsername: owner.username });
-          return subscribe(owner.id, res, loadFields(owner.id));
+        if (owner.id === viewer.id) return redirect(res, "/me");
+        if (profile[2]) {
+          audit("profile_connected", {
+            ownerId: owner.id,
+            ownerUsername: owner.username,
+            viewerId: viewer.id,
+            viewerUsername: viewer.username,
+          });
+          return subscribeMutualView(viewer.id, owner.id, res, mutualFields(owner.id, viewer.id));
         }
-        audit("share_viewed", { ownerId: owner.id, ownerUsername: owner.username });
-        return html(res, 200, renderShared(owner.username, loadFields(owner.id)));
+        audit("profile_viewed", {
+          ownerId: owner.id,
+          ownerUsername: owner.username,
+          viewerId: viewer.id,
+          viewerUsername: viewer.username,
+        });
+        return html(res, 200, renderMutualProfile(owner.username, mutualFields(owner.id, viewer.id)));
       }
 
       if (method === "GET" && path === "/readme/") {

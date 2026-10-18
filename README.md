@@ -50,18 +50,25 @@ as an unrelated pile of safety features.
   general, honours the audience or just borrows its legitimacy. We're
   watching for the difference.
 
-**Current state (crit 9), and where it falls short of the above.** You now log
-in and edit your own profile — add a field, or remove one. You can make a
-share link; anyone holding it sees your profile read-only, and it updates live,
-without a reload, when you change it. Regenerating the link ends the old one.
+**Current state (crit 10), and where it still falls short of the above.** You
+log in and edit your own profile — add a field, or remove one. Reaching
+someone else now works two ways, and both enforce the first rule above
+server-side: a viewer sees a field's content only if they've added that same
+field themselves.
 
-That share link shows your **whole** profile to whoever holds it. That breaks
-the first enforced rule above — a viewer seeing only the fields they've added
-themselves — and it's a deliberate, temporary choice: we built the real-time,
-multi-user skeleton first, and the mutual-field rule is the next thing to put
-back on top of it, not something we've given up. Until then, the only
-protection is that nobody can reach your profile without a link you chose to
-make and send. Matching, search and suggestions don't exist yet either.
+- **Your profile link** (`/u/<username>`, shown on your own page) shows a
+  logged-in visitor only the fields you both hold, and it updates live,
+  without a reload, when either of you adds or removes a matching field. The
+  whole-profile share link from crit 9 — which showed everything to whoever
+  held the link — is gone; this replaces it.
+- **Search**, scoped to a field you already hold, surfaces only other people
+  who also hold that exact field, and only what they wrote under it.
+
+Suggestions (the contextual "someone has a field like yours" mechanism) don't
+exist yet. Nor does autocomplete on field titles, which means two
+differently-cased or worded titles for the same thing ("board games" vs.
+"Board Games") currently just don't match each other — a known gap, not a
+silent compromise.
 
 ## What shaped this
 

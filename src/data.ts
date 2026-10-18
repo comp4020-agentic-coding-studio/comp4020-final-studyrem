@@ -1,6 +1,7 @@
 // Accounts and their profiles, in SQLite on the Fly volume (see db.ts). Each
-// user owns an ordered list of fields; a user may hold one share token, which
-// is the only way anyone else reaches their profile.
+// user owns an ordered list of fields; another user sees a field only if
+// they hold that same field themselves (decision 4) — enforced in
+// mutualFields() and searchField(), not by any token or ACL on the row.
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
@@ -18,7 +19,6 @@ export interface User {
   id: string;
   username: string;
   passwordHash: string;
-  shareToken: string | null;
   createdAt: string;
 }
 
@@ -31,7 +31,6 @@ interface UserRow {
   id: string;
   username: string;
   password_hash: string;
-  share_token: string | null;
   created_at: string;
 }
 
@@ -39,7 +38,6 @@ const toUser = (row: UserRow): User => ({
   id: row.id,
   username: row.username,
   passwordHash: row.password_hash,
-  shareToken: row.share_token,
   createdAt: row.created_at,
 });
 
@@ -84,12 +82,6 @@ export function findUserById(id: string): User | undefined {
   return row ? toUser(row) : undefined;
 }
 
-export function findUserByShareToken(token: string): User | undefined {
-  if (!token) return undefined;
-  const row = db.prepare("SELECT * FROM users WHERE share_token = ?").get(token) as UserRow | undefined;
-  return row ? toUser(row) : undefined;
-}
-
 // Throws with a user-facing message on invalid input or a taken username.
 export function createUser(username: string, password: string): User {
   const name = username.toLowerCase();
@@ -107,12 +99,14 @@ export function createUser(username: string, password: string): User {
     id: randomUUID(),
     username: name,
     passwordHash: hashPassword(password),
-    shareToken: null,
     createdAt: new Date().toISOString(),
   };
-  db.prepare(
-    "INSERT INTO users (id, username, password_hash, share_token, created_at) VALUES (?, ?, ?, ?, ?)",
-  ).run(user.id, user.username, user.passwordHash, user.shareToken, user.createdAt);
+  db.prepare("INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)").run(
+    user.id,
+    user.username,
+    user.passwordHash,
+    user.createdAt,
+  );
 
   // The first account inherits crit 8's shared profile; the old file is kept,
   // renamed, rather than deleted.
@@ -138,14 +132,6 @@ export function createUser(username: string, password: string): User {
   return user;
 }
 
-// Issues a fresh token, invalidating any previous one. Returns the new token.
-export function rotateShareToken(userId: string): string {
-  const token = randomBytes(24).toString("base64url");
-  const result = db.prepare("UPDATE users SET share_token = ? WHERE id = ?").run(token, userId);
-  if (result.changes === 0) throw new Error("no such user");
-  return token;
-}
-
 export function loadFields(userId: string): Field[] {
   const rows = db
     .prepare("SELECT * FROM fields WHERE user_id = ? ORDER BY created_at")
@@ -168,6 +154,19 @@ export function addField(userId: string, title: string, content: string): Field[
 export function removeField(userId: string, fieldId: string): Field[] {
   db.prepare("DELETE FROM fields WHERE id = ? AND user_id = ?").run(fieldId, userId);
   return loadFields(userId);
+}
+
+// Decision 4, enforced directly: the fields a viewer may see on someone
+// else's profile are exactly the ones whose title the viewer also holds.
+export function mutualFields(ownerId: string, viewerId: string): Field[] {
+  const rows = db
+    .prepare(
+      `SELECT * FROM fields WHERE user_id = ?
+       AND title IN (SELECT title FROM fields WHERE user_id = ?)
+       ORDER BY created_at`,
+    )
+    .all(ownerId, viewerId) as unknown as FieldRow[];
+  return rows.map(toField);
 }
 
 export interface FieldMatch {
