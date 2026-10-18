@@ -15,11 +15,12 @@ import {
   loadFields,
   removeField,
   rotateShareToken,
+  searchField,
   verifyPassword,
 } from "./data.ts";
 import type { User } from "./data.ts";
 import { publish, revoke, subscribe } from "./live.ts";
-import { renderLogin, renderNotFound, renderOwner, renderReadme, renderShared } from "./page.ts";
+import { renderLogin, renderNotFound, renderOwner, renderReadme, renderSearch, renderShared } from "./page.ts";
 import { clearedCookie, sessionCookie, sessionUserId } from "./session.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -135,6 +136,26 @@ const server = createServer((req, res) => {
           audit("share_rotated", { userId: user.id, username: user.username });
           return redirect(res, "/me");
         }
+      }
+
+      if (method === "GET" && path === "/search") {
+        const user = currentUser(req);
+        if (!user) {
+          audit("unauthorized", { path, method });
+          return redirect(res, "/");
+        }
+        const title = (url.searchParams.get("title") ?? "").trim();
+        const query = (url.searchParams.get("q") ?? "").trim();
+        // Decision 6: scoped to a field you already hold — checked here,
+        // server-side, not just hidden in the UI.
+        const owns = title !== "" && loadFields(user.id).some((f) => f.title === title);
+        if (!owns) {
+          res.writeHead(403, { "Content-Type": "text/plain" });
+          return res.end("you don't have that field");
+        }
+        const results = query === "" ? [] : searchField(title, query, user.id);
+        audit("field_search", { userId: user.id, username: user.username, title, resultCount: String(results.length) });
+        return html(res, 200, renderSearch(title, query, results));
       }
 
       const share = method === "GET" && path.match(/^\/s\/([A-Za-z0-9_-]+)(\/events)?\/?$/);

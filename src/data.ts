@@ -169,3 +169,24 @@ export function removeField(userId: string, fieldId: string): Field[] {
   db.prepare("DELETE FROM fields WHERE id = ? AND user_id = ?").run(fieldId, userId);
   return loadFields(userId);
 }
+
+export interface FieldMatch {
+  username: string;
+  content: string;
+}
+
+// Scoped to one field title, excludes the searcher's own fields. Only
+// username + the matching field's content ever come back — decision 6
+// shares exactly that one field, nothing else of the matched person.
+export function searchField(title: string, query: string, excludeUserId: string): FieldMatch[] {
+  const escaped = query.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const rows = db
+    .prepare(
+      `SELECT u.username, f.content FROM fields f
+       JOIN users u ON u.id = f.user_id
+       WHERE f.title = ? AND u.id != ? AND f.content LIKE '%' || ? || '%' ESCAPE '\\'
+       ORDER BY f.created_at`,
+    )
+    .all(title, excludeUserId, escaped) as unknown as FieldMatch[];
+  return rows;
+}

@@ -1,5 +1,5 @@
 // HTML templating. No framework: a handful of pages, each a template literal.
-import type { Field } from "./data.ts";
+import type { Field, FieldMatch } from "./data.ts";
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -70,7 +70,8 @@ export function renderOwner(username: string, fields: Field[], shareUrl: string 
     .map((f) =>
       fieldItem(
         f,
-        `<form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>`,
+        `<form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
+<a href="/search?title=${encodeURIComponent(f.title)}">Search for this</a>`,
       ),
     )
     .join("\n");
@@ -144,6 +145,33 @@ ${items || '<li class="empty">Nothing here yet.</li>'}
   });
 })();
 </script>`,
+  );
+}
+
+// Scoped to one field title the searcher already holds (checked in
+// server.ts, not here). No link out to a full profile: that would leak
+// more than the one field decision 6 says this page may share.
+export function renderSearch(title: string, query: string, results: FieldMatch[]): string {
+  const items = results
+    .map((r) => `<li><h2>${escapeHtml(r.username)}</h2><p>${escapeHtml(r.content)}</p></li>`)
+    .join("\n");
+  const resultsBlock =
+    query.trim() === ""
+      ? ""
+      : `<ul>
+${items || "<li>Nobody else has this field yet.</li>"}
+</ul>`;
+  return layout(
+    `Search "${escapeHtml(title)}" — Commonplace`,
+    `<h1>Search within <q>${escapeHtml(title)}</q></h1>
+<p>Only people who also hold this field, and only what they wrote under it.</p>
+<form method="get" action="/search">
+  <input type="hidden" name="title" value="${escapeHtml(title)}" />
+  <label>Search text <input name="q" value="${escapeHtml(query)}" autofocus /></label>
+  <button type="submit">Search</button>
+</form>
+${resultsBlock}
+<p><a href="/me">&larr; Back to your profile</a></p>`,
   );
 }
 
