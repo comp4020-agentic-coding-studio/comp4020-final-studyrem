@@ -93,7 +93,7 @@ const server = createServer((req, res) => {
             audit("signup", { userId: user.id, username: user.username });
             return redirect(res, "/me", sessionCookie(req, user.id, user.sessionVersion));
           } catch (err) {
-            return html(res, 400, renderLogin((err as Error).message));
+            return html(res, 400, renderLogin((err as Error).message, "signup"));
           }
         }
         const user = findUserByUsername(username);

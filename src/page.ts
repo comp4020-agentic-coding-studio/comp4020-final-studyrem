@@ -13,6 +13,18 @@ function escapeHtml(s: string): string {
 // 1.4.11 sets for UI component boundaries (not held to the text threshold).
 // --border-subtle is decorative only (list dividers) and carries no
 // contrast requirement, since nothing depends on seeing it to use the page.
+//
+// Visual language is deliberately open and editorial — a page in a
+// notebook, not a form wizard: no boxed cards, no drop shadows, hairline
+// rules doing the grouping a border used to. A serif carries display
+// headings (system-installed faces only, no webfont download, so the
+// no-dependency ethos README.md claims for itself still holds); body copy,
+// labels and controls stay on the humanist sans for legibility at small
+// sizes. Every color value and a11y mechanism here (focus ring,
+// reduced-motion-gated entrance, outline-vs-filled button distinction) is
+// carried over unchanged from the prior pass — only chrome and rhythm
+// moved.
+const SERIF = `Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif`;
 const STYLE = `
   :root {
     --bg: #faf6f0;
@@ -29,28 +41,34 @@ const STYLE = `
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
-    max-width: 38rem;
-    margin: 2rem auto;
+    max-width: 34rem;
+    margin: 3rem auto 6rem;
     padding: 0 1.25rem;
-    line-height: 1.6;
+    line-height: 1.65;
     font-size: 1.0625rem;
     color: var(--text);
     background: var(--bg);
   }
-  h1, h2 { line-height: 1.3; }
+  h1, h2 {
+    font-family: ${SERIF};
+    font-weight: 400;
+    line-height: 1.25;
+  }
+  h1 { font-size: 2rem; margin: 0 0 1.25rem; }
+  h2 { font-size: 1.15rem; margin: 0 0 0.5rem; }
   a { color: var(--accent); }
   a:hover { color: var(--accent-hover); }
+  .rule {
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+    margin: 1.75rem 0;
+  }
   form {
     display: grid;
-    gap: 0.6rem;
+    gap: 0.9rem;
     margin: 1.5rem 0;
-    padding: 1.25rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 0.6rem;
-    box-shadow: 0 1px 3px rgba(60, 40, 20, 0.07);
   }
-  form.inline { display: inline; margin: 0; padding: 0; border: 0; box-shadow: none; }
+  form.inline { display: inline; margin: 0; }
   label { display: grid; gap: 0.3rem; font-size: 0.9rem; color: var(--text-muted); }
   input, textarea {
     font: inherit;
@@ -60,7 +78,7 @@ const STYLE = `
     border: 1px solid var(--border);
     border-radius: 0.35rem;
   }
-  input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+  input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible {
     outline: 3px solid var(--accent);
     outline-offset: 2px;
   }
@@ -85,23 +103,50 @@ const STYLE = `
     background: var(--text-muted);
     border-color: var(--text-muted);
   }
-  ul { list-style: none; padding: 0; }
-  li { border-top: 1px solid var(--border-subtle); padding: 1rem 0; }
-  li h2 { margin: 0 0 0.3rem; font-size: 1rem; }
-  li p { margin: 0 0 0.4rem; white-space: pre-wrap; }
+  details.signup {
+    margin: 2rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+  details.signup summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 0.95rem;
+    list-style: none;
+  }
+  details.signup summary::-webkit-details-marker { display: none; }
+  details.signup summary:hover { color: var(--accent-hover); }
+  details.signup[open] summary { margin-bottom: 1.25rem; }
+  ul { list-style: none; padding: 0; margin: 1.5rem 0; }
+  li { border-top: 1px solid var(--border-subtle); padding: 1.25rem 0; }
+  li:first-child { border-top: 0; }
+  li h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
+  li p { margin: 0 0 0.6rem; white-space: pre-wrap; }
+  .field-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .field-actions a { font-size: 0.95rem; }
+  .field-actions form.inline button {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.7rem;
+    color: var(--text-muted);
+    border-color: var(--border-subtle);
+  }
+  .field-actions form.inline button:hover, .field-actions form.inline button:active {
+    color: var(--accent-contrast);
+    background: var(--text-muted);
+    border-color: var(--text-muted);
+  }
   .error, .notice, .suggestion {
-    padding: 0.6rem 0.9rem;
+    padding: 0.2rem 0 0.2rem 0.9rem;
     border-left: 3px solid var(--text-muted);
-    border-radius: 0.2rem;
-    background: var(--surface);
   }
   .error { color: var(--error); border-left-color: var(--error); }
   .notice { color: var(--text-muted); }
-  .suggestion { color: var(--text-muted); font-size: 0.9rem; border-left-color: var(--accent); }
-  .suggestion form { display: inline; margin: 0; padding: 0; border: 0; box-shadow: none; }
+  .suggestion { color: var(--text-muted); font-size: 0.95rem; border-left-color: var(--accent); margin: 1.75rem 0; }
+  .suggestion form { display: inline; margin: 0; }
   .empty { color: var(--text-muted); font-size: 0.95rem; }
   .share input { width: 100%; }
-  header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  header h1 { margin-bottom: 0; }
 
   /* Live-update arrivals read as a quiet settle, not a pop — calm tech's
      "non-intrusive arrival" over an instant swap. Skipped entirely for
@@ -134,25 +179,33 @@ ${body}
 `;
 }
 
-export function renderLogin(error?: string): string {
+// `errorOn` says which form the message belongs to, so a failed signup
+// reopens the signup disclosure with its own error rather than surfacing a
+// signup problem next to the login form (or vice versa).
+export function renderLogin(error?: string, errorOn: "login" | "signup" = "login"): string {
+  const loginError = error && errorOn === "login" ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
+  const signupError = error && errorOn === "signup" ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
   return layout(
     "Commonplace",
     `<h1>Commonplace</h1>
 <p>A profile is a set of fields: a title, and whatever you want to say about
 it. Log in to edit yours.</p>
-${error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : ""}
+<hr class="rule" />
+${loginError}
 <form method="post" action="/login">
-  <h2>Log in</h2>
   <label>Username <input name="username" required autocomplete="username" /></label>
   <label>Password <input name="password" type="password" required autocomplete="current-password" /></label>
   <button type="submit">Log in</button>
 </form>
-<form method="post" action="/signup">
-  <h2>Create an account</h2>
-  <label>Username <input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_\\-]{3,32}" autocomplete="username" /></label>
-  <label>Password (at least 8 characters) <input name="password" type="password" required minlength="8" autocomplete="new-password" /></label>
-  <button type="submit">Sign up</button>
-</form>
+<details class="signup"${errorOn === "signup" ? " open" : ""}>
+  <summary>New here? Create an account</summary>
+  ${signupError}
+  <form method="post" action="/signup">
+    <label>Username <input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_\\-]{3,32}" autocomplete="username" /></label>
+    <label>Password (at least 8 characters) <input name="password" type="password" required minlength="8" autocomplete="new-password" /></label>
+    <button type="submit">Sign up</button>
+  </form>
+</details>
 <p><a href="/readme/">What good means for this app</a></p>`,
   );
 }
@@ -171,8 +224,10 @@ export function renderOwner(
     .map((f) =>
       fieldItem(
         f,
-        `<form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
-<a href="/search?title=${encodeURIComponent(f.title)}">Search for this</a>`,
+        `<div class="field-actions">
+<a href="/search?title=${encodeURIComponent(f.title)}">Search for this</a>
+<form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
+</div>`,
       ),
     )
     .join("\n");
@@ -247,7 +302,10 @@ ${items}
       const searchLink = document.createElement("a");
       searchLink.href = "/search?title=" + encodeURIComponent(f.title);
       searchLink.textContent = "Search for this";
-      li.append(h, p, deleteForm, searchLink);
+      const actions = document.createElement("div");
+      actions.className = "field-actions";
+      actions.append(searchLink, deleteForm);
+      li.append(h, p, actions);
       if (!seenIds.has(f.id)) {
         li.classList.add("field-enter");
         newlyArrived.push(li);
@@ -265,6 +323,7 @@ ${items}
   });
 })();
 </script>
+<hr class="rule" />
 <div class="share">
   <h2>Your profile link</h2>
   <p>Anyone who's logged in and has added a field you also hold sees that
@@ -293,11 +352,11 @@ export function renderMutualProfile(username: string, fields: Field[], suggestio
   return layout(
     `${escapeHtml(username)} — Commonplace`,
     `<h1>${escapeHtml(username)}</h1>
+${suggestionBlock}
 <p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>You don't share any fields with ${escapeHtml(username)} yet — add a field they also have to see it.</p>
 <ul id="fields">
 ${items}
 </ul>
-${suggestionBlock}
 <script>
 (() => {
   const list = document.getElementById("fields");

@@ -598,6 +598,66 @@ tabs on one account, `field-enter`/`field-enter-active` both present on
 the pushed `<li>` immediately after a cross-tab add) with zero console
 errors.
 
+**30. Restyle: open, editorial, letter-like visual language, replacing
+decision 29's boxed-card chrome; plus a login-flow fix (signup folded
+behind a disclosure instead of shown as an equally-weighted second form)
+and two field-order refinements.**
+Context: decision 29 fixed the accessibility gaps (contrast, focus states,
+reduced motion) but kept a generic boxed-card/form-wizard visual language —
+white cards, borders, drop shadows. Asked for: "beautiful," and warmth that
+doesn't necessarily mean warm color (warmth as calm/softness, not hue);
+and the interaction flow refined, not just repainted. Confirmed up front
+(AskUserQuestion, three options with ASCII previews): open/editorial over
+rounded-cozy or minimal-polish-only — read like a page in a notebook or a
+letter to a stranger, which is literally how README.md frames the product
+(Priya's story), not a SaaS dashboard.
+What changed, `src/page.ts`: dropped every `form { border; border-radius;
+box-shadow; background }` card treatment — forms are now plain grid
+blocks with no visible container. Added a serif display-heading stack
+(`Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif`,
+all pre-installed system serifs — no webfont, keeps the no-dependency
+ethos) used only for `h1`/`h2`, never body/labels/controls, which stay on
+the existing humanist sans. Hairline `<hr class="rule">` rules replace
+borders as the visual-grouping device (under the login intro, before the
+share-link block on `/me`). `.error`/`.notice`/`.suggestion` lost their
+leftover `background: var(--surface)` card fill, now reading as a plain
+left-accent-rule aside against the open page. All decision-29 palette
+values, contrast ratios, `:focus-visible` ring, and the
+`field-enter`/`field-enter-active` reduced-motion-gated fade are carried
+over unchanged — this pass touched chrome, type, and rhythm, not the
+accessibility work already done.
+Flow fix (the login page): today's page always showed Log in and Create
+an account as two fully-boxed, equally-weighted forms — a new visitor had
+to parse both before acting. Replaced with a `<details class="signup">`
+disclosure: Log in stays primary and always visible; "New here? Create an
+account" is a `<summary>` that reveals the signup form on demand. Zero JS,
+keyboard-operable and no-JS-safe by construction (matches the existing
+progressive-enhancement constraint — every form here must work without
+JS). `renderLogin` gained an `errorOn: "login" | "signup"` parameter so a
+failed signup attempt re-renders with `<details open>` and the error next
+to the signup form specifically, not floating ambiguously between both;
+`src/server.ts`'s one signup-catch call site was updated to pass
+`"signup"`. No new routes — same `/login`/`/signup` POST targets,
+untouched.
+Two flow refinements while in this file: the suggestion aside on
+`/u/:username` (today rendered *after* the field list, easy to miss) now
+renders directly under the page heading, before the list — a quieter,
+earlier placement a viewer actually notices. On `/me`, each field's
+action row ("Search for this" / "Remove") was reordered and restyled so
+the forward-looking action reads first and more prominent, with "Remove"
+visually secondary (smaller, muted) rather than competing evenly with it
+— spacing/order only, no new color, the outline-vs-filled distinction
+from decision 29 is untouched.
+Verified: `pnpm typecheck && pnpm test` (39/39 green), `check:evidence`
+green, visual check via headless Chromium (Playwright, matching the
+already-installed chromium browser build) across: login logged-out with
+signup collapsed, login with signup opened and its own forms, login with
+a login-specific error, empty `/me`, `/me` with two fields, `/me` in its
+error state, mutual profile with field overlap plus the suggestion aside,
+mutual profile with no overlap (empty state), search with a result — each
+at ~1280px and ~390px width, confirming no horizontal overflow and the
+disclosure/forms remain reachable and fillable at both sizes.
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
