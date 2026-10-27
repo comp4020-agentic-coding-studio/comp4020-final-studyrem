@@ -499,21 +499,33 @@ fields list, with a form posting straight to the existing `/me/fields`
 handler — adding the suggested field is identical to adding any other
 field, so no new route was needed.
 
+**27. No standalone "browse available fields" pool; the suggestion
+mechanism (decision 9/26) is the answer to "what do I put in my profile."**
+Context: raised at decision 21, left open through decision 26 — whether a
+passive, pull-based browse page should exist alongside the per-encounter
+suggestion.
+Why: the current balance is right as-is. The headline principle (decision
+3's "never exposed to someone's attention without opting in first") rules
+out a browse page outright — that's exactly the feed/listing README.md
+already forecloses. But a suggestion shown only when viewing a specific
+mutual profile isn't passive browsing: it's a hint for someone who's
+already opted in and simply doesn't know what to write next, not a way to
+see what's out there before committing to anything. Keeping it scoped to
+that moment, rather than generalizing it into a pool, is what keeps it a
+hint rather than a nudge toward exposure.
+What this doesn't resolve: `GET /fields/suggest` (decision 21) still lets
+any logged-in user learn a title's existence and holder-count without
+holding it themselves — a narrower, already-live version of "browsing"
+that this decision doesn't touch. Left as-is, same as before.
+
 ## Open / not yet decided
 
-- Whether a passive, pull-based "browse available fields" pool exists
-  alongside the contextual suggestion mechanism (decision 9, built —
-  see decision 26) — raised, not resolved. Decision 21 deliberately did
-  not fold this in, and decision 26 doesn't either.
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
   title's existence and holder-count without holding it themselves —
   confirmed by the same audit (querying a single/double-letter prefix
   surfaces titles across the whole system, titles and counts only, never
-  content or usernames). This is a weaker, already-partially-live version
-  of the "passive browse pool" question above, not a separate issue:
-  resolving the browse-pool decision either way should account for the
-  fact that a narrow form of it already exists via autocomplete. Left
-  as-is for now (probably intentional — it's literally how you discover
-  what to type — but not an explicit call when decision 21 was made).
+  content or usernames). Left as-is for now (probably intentional — it's
+  literally how you discover what to type — but not an explicit call when
+  decision 21 was made).
 - The app's actual name (`README.md` still says "Commonplace, working
   title").
