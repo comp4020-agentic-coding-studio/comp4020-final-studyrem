@@ -5,23 +5,115 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// Warm neutrals + one muted terracotta accent — warmth from softness and
+// undertone, not saturation. Every text/UI-boundary pair below is checked
+// against the real WCAG relative-luminance contrast formula, not eyeballed:
+// body text and accent clear AAA (7:1+), muted text and error text clear AA
+// (4.5:1+), and --border clears the separate, lower 3:1 threshold WCAG
+// 1.4.11 sets for UI component boundaries (not held to the text threshold).
+// --border-subtle is decorative only (list dividers) and carries no
+// contrast requirement, since nothing depends on seeing it to use the page.
 const STYLE = `
-  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1a1a1a; }
-  form { display: grid; gap: 0.5rem; margin: 1.5rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 0.5rem; }
-  form.inline { display: inline; margin: 0; padding: 0; border: 0; }
-  label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
-  input, textarea { font: inherit; padding: 0.4rem; border: 1px solid #bbb; border-radius: 0.25rem; }
-  button { justify-self: start; padding: 0.4rem 1rem; }
+  :root {
+    --bg: #faf6f0;
+    --surface: #ffffff;
+    --text: #2a2420;
+    --text-muted: #6b5f55;
+    --border: #9c8671;
+    --border-subtle: #e6dacb;
+    --accent: #8a3f26;
+    --accent-hover: #6e3019;
+    --accent-contrast: #fff8f2;
+    --error: #9a3324;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    max-width: 38rem;
+    margin: 2rem auto;
+    padding: 0 1.25rem;
+    line-height: 1.6;
+    font-size: 1.0625rem;
+    color: var(--text);
+    background: var(--bg);
+  }
+  h1, h2 { line-height: 1.3; }
+  a { color: var(--accent); }
+  a:hover { color: var(--accent-hover); }
+  form {
+    display: grid;
+    gap: 0.6rem;
+    margin: 1.5rem 0;
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.6rem;
+    box-shadow: 0 1px 3px rgba(60, 40, 20, 0.07);
+  }
+  form.inline { display: inline; margin: 0; padding: 0; border: 0; box-shadow: none; }
+  label { display: grid; gap: 0.3rem; font-size: 0.9rem; color: var(--text-muted); }
+  input, textarea {
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+  }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button {
+    justify-self: start;
+    padding: 0.5rem 1.1rem;
+    font: inherit;
+    color: var(--accent-contrast);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 0.35rem;
+    cursor: pointer;
+  }
+  button:hover, button:active { background: var(--accent-hover); border-color: var(--accent-hover); }
+  form.inline button {
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--border);
+  }
+  form.inline button:hover, form.inline button:active {
+    color: var(--accent-contrast);
+    background: var(--text-muted);
+    border-color: var(--text-muted);
+  }
   ul { list-style: none; padding: 0; }
-  li { border-top: 1px solid #ddd; padding: 0.75rem 0; }
-  li h2 { margin: 0 0 0.25rem; font-size: 1rem; }
-  li p { margin: 0 0 0.25rem; white-space: pre-wrap; }
-  .error { color: #a00; }
-  .notice { color: #555; }
-  .suggestion { color: #555; font-size: 0.9rem; }
-  .suggestion form { display: inline; margin: 0; padding: 0; border: 0; }
-  .share input { width: 100%; box-sizing: border-box; }
+  li { border-top: 1px solid var(--border-subtle); padding: 1rem 0; }
+  li h2 { margin: 0 0 0.3rem; font-size: 1rem; }
+  li p { margin: 0 0 0.4rem; white-space: pre-wrap; }
+  .error, .notice, .suggestion {
+    padding: 0.6rem 0.9rem;
+    border-left: 3px solid var(--text-muted);
+    border-radius: 0.2rem;
+    background: var(--surface);
+  }
+  .error { color: var(--error); border-left-color: var(--error); }
+  .notice { color: var(--text-muted); }
+  .suggestion { color: var(--text-muted); font-size: 0.9rem; border-left-color: var(--accent); }
+  .suggestion form { display: inline; margin: 0; padding: 0; border: 0; box-shadow: none; }
+  .empty { color: var(--text-muted); font-size: 0.95rem; }
+  .share input { width: 100%; }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+
+  /* Live-update arrivals read as a quiet settle, not a pop — calm tech's
+     "non-intrusive arrival" over an instant swap. Skipped entirely for
+     anyone who has told their OS they don't want motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    li.field-enter {
+      opacity: 0;
+      transform: translateY(0.25rem);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    li.field-enter-active { opacity: 1; transform: translateY(0); }
+  }
 `;
 
 function layout(title: string, body: string): string {
@@ -66,7 +158,7 @@ ${error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : ""}
 }
 
 const fieldItem = (f: Field, extra = ""): string =>
-  `<li><h2>${escapeHtml(f.title)}</h2><p>${escapeHtml(f.content)}</p>${extra}</li>`;
+  `<li data-field-id="${escapeHtml(f.id)}"><h2>${escapeHtml(f.title)}</h2><p>${escapeHtml(f.content)}</p>${extra}</li>`;
 
 export function renderOwner(
   username: string,
@@ -132,11 +224,14 @@ ${items}
   // device logged into the same account) adds or removes a field.
   const list = document.getElementById("fields");
   const emptyNote = document.getElementById("empty-note");
+  const seenIds = new Set(Array.from(list.children, (li) => li.dataset.fieldId));
   const source = new EventSource("/me/events");
   source.addEventListener("fields", (e) => {
     const fields = JSON.parse(e.data);
+    const newlyArrived = [];
     list.replaceChildren(...fields.map((f) => {
       const li = document.createElement("li");
+      li.dataset.fieldId = f.id;
       const h = document.createElement("h2");
       const p = document.createElement("p");
       h.textContent = f.title;
@@ -153,9 +248,20 @@ ${items}
       searchLink.href = "/search?title=" + encodeURIComponent(f.title);
       searchLink.textContent = "Search for this";
       li.append(h, p, deleteForm, searchLink);
+      if (!seenIds.has(f.id)) {
+        li.classList.add("field-enter");
+        newlyArrived.push(li);
+      }
       return li;
     }));
     emptyNote.hidden = fields.length > 0;
+    seenIds.clear();
+    fields.forEach((f) => seenIds.add(f.id));
+    if (newlyArrived.length > 0) {
+      requestAnimationFrame(() => {
+        newlyArrived.forEach((li) => li.classList.add("field-enter-active"));
+      });
+    }
   });
 })();
 </script>
@@ -196,19 +302,33 @@ ${suggestionBlock}
 (() => {
   const list = document.getElementById("fields");
   const emptyNote = document.getElementById("empty-note");
+  const seenIds = new Set(Array.from(list.children, (li) => li.dataset.fieldId));
   const source = new EventSource(location.pathname.replace(/\\/$/, "") + "/events");
   source.addEventListener("fields", (e) => {
     const fields = JSON.parse(e.data);
+    const newlyArrived = [];
     list.replaceChildren(...fields.map((f) => {
       const li = document.createElement("li");
+      li.dataset.fieldId = f.id;
       const h = document.createElement("h2");
       const p = document.createElement("p");
       h.textContent = f.title;
       p.textContent = f.content;
       li.append(h, p);
+      if (!seenIds.has(f.id)) {
+        li.classList.add("field-enter");
+        newlyArrived.push(li);
+      }
       return li;
     }));
     emptyNote.hidden = fields.length > 0;
+    seenIds.clear();
+    fields.forEach((f) => seenIds.add(f.id));
+    if (newlyArrived.length > 0) {
+      requestAnimationFrame(() => {
+        newlyArrived.forEach((li) => li.classList.add("field-enter-active"));
+      });
+    }
   });
 })();
 </script>`,

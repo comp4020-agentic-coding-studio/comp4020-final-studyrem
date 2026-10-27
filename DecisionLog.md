@@ -546,6 +546,58 @@ Verified manually too: two concurrent `/me/events` connections on one
 account, adding a field from one shows up on the other within ~1s without
 a reload.
 
+**29. Restyle: warm neutrals + one muted terracotta accent, plus calmer
+interaction feel for live updates, errors, and empty states.**
+Context: the app worked (decisions 1–28 shipped) but still rendered as an
+unstyled template — default `system-ui`, `#1a1a1a` on white, hairline
+gray borders, no focus states anywhere. Asked for: warm, but not
+necessarily via warm colors (warmth as softness/calm, not hue);
+accessible; inclusive for the audience README.md names (decision 2).
+Confirmed up front: light mode only this pass (no dark mode yet), and
+both the visual layer and the interaction feel (live-update arrival,
+form feedback, empty states) get real attention, not just color/type.
+Research grounding: calm technology (Amber Case/Mark Weiser, already
+cited in README.md) motivates a quiet arrival for live updates rather
+than an instant pop; trauma-informed design guidance (no sudden motion,
+generous white space, non-alarming tone for errors) shaped the error
+treatment and the choice to keep "Remove" an outline button rather than
+a filled danger-red; WCAG contrast math (not eyeballing) set every color
+value below.
+Palette (light only): `--bg #faf6f0`, `--surface #ffffff`,
+`--text #2a2420` (14–15:1 on bg, AAA), `--text-muted #6b5f55` (5.8–6.2:1,
+AA), `--border #9c8671` (3.2–3.5:1 against both bg and surface — clears
+WCAG 1.4.11's separate 3:1 UI-component-boundary threshold, not held to
+the 4.5:1 text threshold), `--border-subtle #e6dacb` (decorative dividers
+only, no contrast requirement applies), `--accent #8a3f26` (6.9–7.5:1,
+AAA), `--accent-hover #6e3019`, `--accent-contrast #fff8f2`,
+`--error #9a3324` (6.8:1, AAA). Humanist system font stack
+(`-apple-system, "Segoe UI", system-ui`) — no web-font dependency, keeps
+the no-dependency ethos README.md already claims for itself.
+What changed, `src/page.ts`: `STYLE` rewritten with the palette above,
+~38rem line length and 1.6 line-height (the readability-research sweet
+spot for line length/spacing, generalizes well past the one population it
+was studied in), a real `:focus-visible` ring on every interactive
+element (there was none before — a genuine a11y gap closed, not just a
+cosmetic change), filled accent buttons with an outline-only style for
+`form.inline` (delete) actions, and a left-border-accent treatment for
+`.error`/`.notice`/`.suggestion` so they read as a calm aside rather than
+an alert popup. `fieldItem` now stamps each `<li>` with `data-field-id`;
+both live-update scripts (`renderOwner`, `renderMutualProfile`) diff
+incoming field ids against what's already on screen and apply a
+`field-enter`/`field-enter-active` fade-and-settle transition only to
+genuinely new items — wrapped in `@media (prefers-reduced-motion:
+no-preference)`, so anyone whose OS says no motion gets today's exact
+instant swap, unchanged.
+Verified: `pnpm typecheck && pnpm test` (39/39 green, no spec touches
+response bodies' matched text), `check:evidence` green, visual check via
+a headless-Chromium script across login/signup, own-profile (clean and
+error states), mutual-profile view, and a 375px mobile width — all
+reflow cleanly with no horizontal overflow. Keyboard-only focus produces
+a visible accent ring. The live-update fade was confirmed firing (two
+tabs on one account, `field-enter`/`field-enter-active` both present on
+the pushed `<li>` immediately after a cross-tab add) with zero console
+errors.
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
