@@ -100,8 +100,9 @@ ${messageBlock}
   <label>What you want to say <textarea name="content" required maxlength="2000" rows="4"></textarea></label>
   <button type="submit">Add field</button>
 </form>
-<ul>
-${items || "<li>No fields yet &mdash; add the first one.</li>"}
+<p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>No fields yet &mdash; add the first one.</p>
+<ul id="fields">
+${items}
 </ul>
 <script>
 (() => {
@@ -125,6 +126,36 @@ ${items || "<li>No fields yet &mdash; add the first one.</li>"}
         return option;
       }));
     }, 250);
+  });
+
+  // Keeps this tab's own field list current when another tab (or another
+  // device logged into the same account) adds or removes a field.
+  const list = document.getElementById("fields");
+  const emptyNote = document.getElementById("empty-note");
+  const source = new EventSource("/me/events");
+  source.addEventListener("fields", (e) => {
+    const fields = JSON.parse(e.data);
+    list.replaceChildren(...fields.map((f) => {
+      const li = document.createElement("li");
+      const h = document.createElement("h2");
+      const p = document.createElement("p");
+      h.textContent = f.title;
+      p.textContent = f.content;
+      const deleteForm = document.createElement("form");
+      deleteForm.className = "inline";
+      deleteForm.method = "post";
+      deleteForm.action = "/me/fields/" + encodeURIComponent(f.id) + "/delete";
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "submit";
+      deleteButton.textContent = "Remove";
+      deleteForm.append(deleteButton);
+      const searchLink = document.createElement("a");
+      searchLink.href = "/search?title=" + encodeURIComponent(f.title);
+      searchLink.textContent = "Search for this";
+      li.append(h, p, deleteForm, searchLink);
+      return li;
+    }));
+    emptyNote.hidden = fields.length > 0;
   });
 })();
 </script>

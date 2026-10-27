@@ -518,6 +518,34 @@ any logged-in user learn a title's existence and holder-count without
 holding it themselves — a narrower, already-live version of "browsing"
 that this decision doesn't touch. Left as-is, same as before.
 
+**28. Fixed: a user's own `/me` tabs didn't sync live with each other.**
+Context: reported directly — open two tabs on your own profile, edit a
+field in one, the other stays stale until reload. Already named, but left
+undecided, in `notes/DesignDraft.md`'s parking lot: decision 7 scoped live
+updates to "an already-open mutual profile view" and never said anything
+about a second tab on your own `/me`. `notifyFieldsChanged` (`src/live.ts`)
+already fired for the editor's own id on every add/remove — nothing
+subscribed to that from `/me` itself, so the push had nowhere to go.
+Why this is a fix, not a design decision: unlike decision 27, this doesn't
+touch the headline principle or the live-update scope — it's your own data
+reaching your own other tabs, not pushed to or revealed to anyone else.
+What changed: `src/live.ts` gained a second subscriber set (`ownSubs`) and
+`subscribeOwnView`, mirroring `subscribeMutualView`'s relay/heartbeat/
+cleanup shape; `notifyFieldsChanged` now also pushes `loadFields(editorId)`
+to every open `ownSubs` entry for that user. `GET /me/events` in
+`src/server.ts` wires a tab up to it, behind the same auth check `/me`
+already uses. `renderOwner` (`src/page.ts`) gained the matching
+`EventSource` script, rebuilding each `<li>` (including its delete form
+and search link) from the pushed field list, the same `replaceChildren`
+approach `renderMutualProfile` already used.
+Covered by `spec/own-view.test.ts`: anonymous access redirects, a fresh
+connection gets the current list immediately, a second "tab" (same
+cookie, separate request) triggers a live push on add and on delete, and
+one account's edits never reach another account's own-view stream.
+Verified manually too: two concurrent `/me/events` connections on one
+account, adding a field from one shows up on the other within ~1s without
+a reload.
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a

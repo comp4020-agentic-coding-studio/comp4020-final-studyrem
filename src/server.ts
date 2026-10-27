@@ -23,7 +23,7 @@ import {
   verifyPassword,
 } from "./data.ts";
 import type { User } from "./data.ts";
-import { notifyFieldsChanged, subscribeMutualView } from "./live.ts";
+import { notifyFieldsChanged, subscribeMutualView, subscribeOwnView } from "./live.ts";
 import { renderLogin, renderMutualProfile, renderNotFound, renderOwner, renderReadme, renderSearch } from "./page.ts";
 import { clearedCookie, sessionCookie, sessionPayload } from "./session.ts";
 
@@ -126,6 +126,10 @@ const server = createServer((req, res) => {
           audit("unauthorized", { path, method });
           res.writeHead(401, { "Content-Type": "text/plain" });
           return res.end("log in first");
+        }
+
+        if (method === "GET" && path === "/me/events") {
+          return subscribeOwnView(user.id, res, loadFields(user.id));
         }
 
         if (method === "GET" && path === "/me") {
