@@ -206,6 +206,24 @@ identical mistake looks like something structural).
   student projects. Related root-cause paper: **"Is Convergence Inevitable?
   Tracing Output Homogeneity Back to Base Models"** —
   https://arxiv.org/abs/2608.11426.
+- **Optional, distinct addition — "model collapse" (not the same claim as
+  Hivemind, don't conflate):** Shumailov, Shumaylov, Zhao, Papernot,
+  Anderson, Gal, "AI models collapse when trained on recursively generated
+  data" (*Nature*, 2024) — https://www.nature.com/articles/s41586-024-07566-y
+  — verified. A **training-time** phenomenon: a model trained recursively on
+  outputs from prior model generations progressively loses the tails of the
+  real distribution, smoothing toward an averaged, less diverse output over
+  successive generations. This is mechanistically different from Hivemind,
+  which is an **inference-time** observation about already-trained,
+  independently-built models converging right now, with no recursive
+  training involved. Not needed for the core claim — Hivemind alone
+  establishes that convergence exists today, regardless of why. Where this
+  earns a place, if there's room, is as a one-sentence forward-looking
+  point: the mechanism generating today's convergence (training increasingly
+  on a web full of AI-generated text) gives no reason to expect the problem
+  to self-correct as models improve — if anything, Shumailov's finding
+  predicts the opposite trend. Cut first if the note is tight on space; it
+  strengthens the argument's trajectory, it doesn't carry any of its weight.
 - **Mechanism (two converging explanations, both citable)**: post-training
   alignment is implicated — preference optimization (RLHF/DPO) measurably
   shrinks output diversity, and LLM judges/reward models used in alignment
