@@ -250,6 +250,41 @@ not a one-time engineering fix.
   Lee & See to interface/interaction design specifically, and to agents.
   Support "good practice is partly a design habit, not a patch."
 
+**The missing half of calibration — a wrong mental model, not just miscalibrated
+trust**: Lee & See assumes the human has an accurate picture of what the
+system can do and only needs to match reliance to it. That picture can itself
+be wrong, which is a different, earlier failure than miscalibrated trust —
+you can't calibrate reliance correctly against a capability you've
+misunderstood in the first place. Directly explains why a corrected claim
+(the Docker recurrence) resurfaces: the human's working assumption that "we
+fixed this, it's remembered" assumes a kind of persistence the system
+doesn't actually have.
+- **Lin, "Six misconceptions about large language models: A minimal model
+  and diagnostic taxonomy"** (*PNAS Nexus*, 2026) —
+  https://academic.oup.com/pnasnexus/article/5/7/pgag236/8728241 (preprint:
+  https://arxiv.org/abs/2608.20421) — verified: single-author, peer-reviewed.
+  Finds users systematically conflate generation with retrieval/search,
+  misjudge what a model actually retains between interactions (vs. what a
+  written artifact *about* a prior interaction retains), and shift their
+  accuracy/risk judgments based on anthropomorphic interface cues rather
+  than actual capability. The single best source for "the human's model of
+  what the agent remembers/knows is often wrong in a specific, nameable
+  way," not just "trust needs calibrating" in the abstract.
+- **Donald Norman, conceptual model / system image framework** (*The Design
+  of Everyday Things*, 1988) — pre-LLM HCI vocabulary for the same gap: the
+  user's mental model, the system's actual behavior, and the "system image"
+  (what the interface implies about the system) can diverge, and a fluent,
+  confident interface is a system image implying more coherent
+  self-knowledge than the architecture has. Useful for one sentence of
+  non-AI-specific grounding, same rhetorical move as citing Lee & See — but
+  mostly restates Lin's point in older language rather than adding new
+  evidence, so treat as the more cuttable of the two if space is tight.
+- Supporting, lower-priority cluster on anthropomorphism and overtrust
+  (fluent tone reads as "knows what it's talking about," inflating
+  expectations beyond architectural capacity) — mostly working-paper/
+  industry-blog tier rather than peer-reviewed; use only as a supporting
+  point alongside Lin, not as a primary citation on its own.
+
 **On "don't abuse your agent" specifically** — split into what's actually
 supported vs. not, since conflating these would be the same overclaiming
 flagged in section A:
