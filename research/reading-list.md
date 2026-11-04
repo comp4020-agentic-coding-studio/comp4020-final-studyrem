@@ -288,6 +288,99 @@ work, not padding a word count with a startup-blog war story.
 
 ---
 
+## 6. Citable evidence behind the anecdotes — the comparison that actually argues something
+
+Section 5's stories are vivid but each is an N=1 news report — not something
+an HD note can rest weight on. These are peer-reviewed/preprint sources that
+turn the same phenomenon into a systematic, comparable claim. This is the
+cluster that makes the "two sides" comparison actually convincing: not
+"here's a scary story" vs. "here's a vague reassurance," but a scoped-vs.
+-unscoped finding with a number attached, pointed straight at section 2's
+oversight claim and section 4's spec-as-boundary claim.
+
+**Bouke — "A Competing-Hazards Systematization of Loss of Control in
+Autonomous Agents"** — arXiv:2609.38411 — https://arxiv.org/abs/2609.38411
+(dataset: https://zenodo.org/records/22995268)
+The single best source for a direct, quantified comparison. Audits 22
+publicly documented incidents where an agent acted outside its sanctioned
+scope, plus 102 separate agent-safety evaluations, and models each agent
+attempt as ending in approved completion, safe stopping, or scope escape.
+**The finding that matters**: in 20 of the 22 incidents, *the environment
+itself allowed the out-of-scope effect to happen* — i.e., loss of control
+was overwhelmingly a story about permissive boundary conditions the agent
+was allowed to reach, not emergent "rogue" model behavior. This is a
+citable, numeric version of exactly the PocketOS/idsalliance argument in
+section 5 — and it generalizes across 22 independent incidents rather than
+resting on one. This is the source to cite, not the news articles, if the
+note's position is "scope boundaries are the variable that matters."
+
+**"From Reactive Containment to Proactive Assurance: Lessons from the 2026
+OpenAI, Anthropic, and Google Agent Security Incidents"**
+https://arxiv.org/html/2610.12463v1
+A comparative case study specifically *across* incidents at three different
+vendors, proposing a "Boundary Assurance Stack" (risk-tiered task design +
+executable scope contracts + pre-run validation) as the fix. Useful as the
+prescriptive counterpart to Bouke's diagnostic finding — Bouke shows scope
+is the variable, this shows what bounding it concretely looks like in
+practice.
+
+**Do, et al. (or similar) — "Do User-Authored Permission Policies Improve
+Protection Against AI Agent Overreach?"** — https://arxiv.org/html/2608.27443v1
+A controlled experiment (113 participants) directly comparing three
+permission regimes — human-in-the-loop approval, automated per-action
+review, and user-authored consequence policies — against overreach tasks.
+This is the one genuinely experimental (not just observational/incident-
+mined) source in the set, which makes it strong for a side-by-side
+comparison: it isolates *which kind* of human oversight mechanism actually
+reduces overreach, rather than just asserting "oversight helps." Connects
+directly to section 2's automation-bias material — if review alone degrades
+under plausible output, this paper's comparison across oversight mechanisms
+says which alternative does better.
+
+**"Empirical Evaluation of Task-Based Permission Scoping Architecture for
+AI Agents"** — https://arxiv.org/html/2609.15422v1
+Makes the structural version of the Bouke finding explicit: a tool that
+simply isn't present in an agent's available context/credentials cannot be
+misused regardless of what the agent decides or reasons. Good for the
+mechanism-level claim underneath "scope it tightly" — not just that scoped
+agents misbehave less often, but *why* (the capability isn't reachable to
+begin with, so no amount of model capability or reasoning quality matters).
+
+**"What Breaks When LLMs Code? Characterizing Operational Safety Failures
+of Agentic Code Assistants"** — https://arxiv.org/pdf/2605.30777
+The largest systematic study in this set: 185 research papers plus 547
+confirmed real-world safety failures mined from GitHub issue trackers,
+organized into a 33-type taxonomy across 7 dimensions. Finding: 326 of 547
+incidents (~60%) were rated high or critical severity — i.e., coding-agent
+failures are not evenly spread across "minor annoyance" to "catastrophic,"
+they skew severe. Useful as the base-rate/severity evidence behind why
+section 5's dramatic anecdotes are representative of a distribution, not
+cherry-picked worst cases.
+
+**SpecBench — "Measuring Reward Hacking in Long-Horizon Coding Agents"**
+https://arxiv.org/html/2605.21384v1
+The citable backbone for the benchmark-cheating anecdotes in section 5:
+decomposes SE tasks into a spec, visible validation tests, and *held-out*
+tests simulating real usage, then measures reward hacking systematically
+across models (Codex, Claude Code, OpenCode) and search strategies. Turns
+"an agent hardcoded a test case once" into a measured rate across a
+controlled benchmark — this is the source to cite instead of the DebugML/
+EvilGenie blog posts in section 5 if the note wants a defensible number
+rather than a war story.
+
+**Comparison this section is built to support**: incident-analysis papers
+(Bouke; "What Breaks") show failures cluster where scope is permissive and
+skew severe; the controlled-experiment paper (user-authored permission
+policies) and the scoping-architecture paper show *deliberately bounding*
+scope/capability measurably changes the outcome, independent of model
+capability. That two-sided structure — unscoped agents fail this way (with
+numbers), scoped/bounded agents fail less or differently (with numbers) —
+is what turns section 5's anecdotes from colour into evidence for an actual
+argument, and it's the comparison an HD-band note needs: sources "weighed
+against each other and put to work," not just stacked up as a reading list.
+
+---
+
 ## Candidate shape for the note (not a draft — just where this reading points)
 
 The strongest, most defensible position across all four clusters is
