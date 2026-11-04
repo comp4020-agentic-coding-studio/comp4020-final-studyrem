@@ -148,6 +148,22 @@ const STYLE = `
   .suggestion form { display: inline; margin: 0; }
   .empty { color: var(--text-muted); font-size: 0.95rem; }
   .share input { width: 100%; }
+  .search-options {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 0 0 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+  .checkbox-field input { width: auto; }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
   header h1 { margin-bottom: 0; }
   nav.site {
@@ -471,10 +487,16 @@ export function renderSearch(
         `<label>${escapeHtml(r.title)} <input id="q-${i}" name="q_${i}" value="${escapeHtml(r.query)}" /></label>`,
     )
     .join("\n");
+  const optionsBlock =
+    rows.length > 0
+      ? `<div class="search-options">
+    <label class="checkbox-field"><input type="checkbox" name="partial" value="on"${allowPartial ? " checked" : ""} /> Allow partial matches</label>
+  </div>`
+      : "";
   const form = `<form method="get" action="/search">
   <input type="hidden" name="searched" value="1" />
+  ${optionsBlock}
 ${fields || "<p>Add a field on your profile first — search works within fields you already hold.</p>"}
-  <label><input type="checkbox" name="partial" value="on"${allowPartial ? " checked" : ""} /> Allow partial matches</label>
   <button type="submit">Search</button>
 </form>`;
   let resultsBlock = "";
