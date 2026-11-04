@@ -682,6 +682,27 @@ mutuality check are untouched. No change to what `searchField` returns or
 logs (`field_search` still records title/query/count only, per decision
 19).
 
+**32. Added a shared site nav (`src/page.ts`'s `siteNav`) to every
+logged-in page, replacing `renderOwner`'s one-off header.**
+Context: decision 31 made `/u/<username>` reachable from search, but that
+page (like `/search` itself) had no way back except the browser's own
+back button — `renderOwner`'s header (brand-less, just a logout form) was
+never meant to be site-wide chrome, and `/search`'s "Back to your profile"
+footer link was a one-off patch for the same underlying gap.
+What changed: one `siteNav(username)` helper — brand link to `/me`, a
+link to `/me` again (explicit, not relying on the brand being obvious),
+the existing `/readme/` link, and the logout form — rendered at the top
+of `/me`, `/search`, and `/u/<username>`. `renderMutualProfile` gained a
+`viewerUsername` parameter (its existing `username` argument names the
+*owner* being viewed, not the logged-in viewer, so the nav needed its own
+parameter rather than reusing that one). Removed now-redundant one-offs:
+`renderOwner`'s bespoke `<header>`, its trailing `/readme/` link, and
+`renderSearch`'s "Back to your profile" footer link.
+Not touched: `/login` and `/readme/` stay without the nav — both are
+reachable logged-out, and `/login` already redirects straight to `/me`
+for anyone with a live session, so there's no "logged in, stuck here"
+case either page could produce.
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a

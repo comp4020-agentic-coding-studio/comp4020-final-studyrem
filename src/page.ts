@@ -150,6 +150,34 @@ const STYLE = `
   .share input { width: 100%; }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
   header h1 { margin-bottom: 0; }
+  nav.site {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.95rem;
+  }
+  nav.site .brand {
+    font-family: ${SERIF};
+    font-size: 1.1rem;
+    color: var(--text);
+    text-decoration: none;
+  }
+  nav.site .links { display: flex; align-items: baseline; gap: 1.1rem; flex-wrap: wrap; }
+  nav.site form.inline button {
+    font: inherit;
+    font-size: 0.95rem;
+    color: var(--accent);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  nav.site form.inline button:hover { color: var(--accent-hover); }
 
   /* Live-update arrivals read as a quiet settle, not a pop — calm tech's
      "non-intrusive arrival" over an instant swap. Skipped entirely for
@@ -163,6 +191,20 @@ const STYLE = `
     li.field-enter-active { opacity: 1; transform: translateY(0); }
   }
 `;
+
+// Shared across every logged-in page (/me, /search, /u/<username>) so a
+// reader can always get back to their own profile or log out, regardless
+// of how they arrived — a search result, a shared link, or /me itself.
+function siteNav(username: string): string {
+  return `<nav class="site">
+<a class="brand" href="/me">Commonplace</a>
+<div class="links">
+<a href="/me">Your profile</a>
+<a href="/readme/">What good means for this app</a>
+<form class="inline" method="post" action="/logout">Logged in as <strong>${escapeHtml(username)}</strong> <button type="submit">Log out</button></form>
+</div>
+</nav>`;
+}
 
 function layout(title: string, body: string): string {
   return `<!doctype html>
@@ -239,10 +281,8 @@ export function renderOwner(
     : "";
   return layout(
     "Your profile — Commonplace",
-    `<header>
+    `${siteNav(username)}
 <h1>Your profile</h1>
-<form class="inline" method="post" action="/logout">Logged in as <strong>${escapeHtml(username)}</strong> <button type="submit">Log out</button></form>
-</header>
 ${messageBlock}
 <form method="post" action="/me/fields">
   <label>Field title <input name="title" required maxlength="80" list="title-suggestions" autocomplete="off" /></label>
@@ -333,8 +373,7 @@ ${items}
   field, live, if they visit this link. Nobody sees anything you don't
   already share with them:</p>
   <input readonly value="${escapeHtml(profileUrl)}" aria-label="Your profile link" onfocus="this.select()" />
-</div>
-<p><a href="/readme/">What good means for this app</a></p>`,
+</div>`,
   );
 }
 
@@ -342,7 +381,12 @@ ${items}
 // (data.ts: mutualFields) — decision 3, enforced server-side. The list is
 // server-rendered so it works without JS; the script then keeps it current
 // from the event stream, writing user text only through textContent.
-export function renderMutualProfile(username: string, fields: Field[], suggestion?: Suggestion): string {
+export function renderMutualProfile(
+  viewerUsername: string,
+  username: string,
+  fields: Field[],
+  suggestion?: Suggestion,
+): string {
   const items = fields.map((f) => fieldItem(f)).join("\n");
   const suggestionBlock = suggestion
     ? `<p class="suggestion">${escapeHtml(username)} has a field you don't: <strong>${escapeHtml(suggestion.title)}</strong>.
@@ -354,7 +398,8 @@ export function renderMutualProfile(username: string, fields: Field[], suggestio
     : "";
   return layout(
     `${escapeHtml(username)} — Commonplace`,
-    `<h1>${escapeHtml(username)}</h1>
+    `${siteNav(viewerUsername)}
+<h1>${escapeHtml(username)}</h1>
 ${suggestionBlock}
 <p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>You don't share any fields with ${escapeHtml(username)} yet — add a field they also have to see it.</p>
 <ul id="fields">
@@ -401,7 +446,7 @@ ${items}
 // server.ts, not here). Each result links to /u/<username> (decision 31):
 // that route re-checks mutuality itself, so the link never shows a viewer
 // anything decision 3's rule wouldn't already let them see directly.
-export function renderSearch(title: string, query: string, results: FieldMatch[]): string {
+export function renderSearch(username: string, title: string, query: string, results: FieldMatch[]): string {
   const items = results
     .map(
       (r) =>
@@ -416,15 +461,15 @@ ${items || "<li>Nobody else has this field yet.</li>"}
 </ul>`;
   return layout(
     `Search "${escapeHtml(title)}" — Commonplace`,
-    `<h1>Search within <q>${escapeHtml(title)}</q></h1>
+    `${siteNav(username)}
+<h1>Search within <q>${escapeHtml(title)}</q></h1>
 <p>Only people who also hold this field, and only what they wrote under it.</p>
 <form method="get" action="/search">
   <input type="hidden" name="title" value="${escapeHtml(title)}" />
   <label>Search text <input name="q" value="${escapeHtml(query)}" autofocus /></label>
   <button type="submit">Search</button>
 </form>
-${resultsBlock}
-<p><a href="/me">&larr; Back to your profile</a></p>`,
+${resultsBlock}`,
   );
 }
 

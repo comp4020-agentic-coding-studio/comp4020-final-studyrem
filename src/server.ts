@@ -199,7 +199,7 @@ const server = createServer((req, res) => {
         }
         const results = query === "" ? [] : searchField(title, query, user.id);
         audit("field_search", { userId: user.id, username: user.username, title, resultCount: String(results.length) });
-        return html(res, 200, renderSearch(title, query, results));
+        return html(res, 200, renderSearch(user.username, title, query, results));
       }
 
       const profile = method === "GET" && path.match(/^\/u\/([^/]+)(\/events)?\/?$/);
@@ -239,7 +239,7 @@ const server = createServer((req, res) => {
         return html(
           res,
           200,
-          renderMutualProfile(owner.username, mutualFields(owner.id, viewer.id), suggestion),
+          renderMutualProfile(viewer.username, owner.username, mutualFields(owner.id, viewer.id), suggestion),
         );
       }
 
