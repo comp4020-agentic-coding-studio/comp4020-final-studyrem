@@ -703,6 +703,45 @@ reachable logged-out, and `/login` already redirects straight to `/me`
 for anyone with a live session, so there's no "logged in, stuck here"
 case either page could produce.
 
+**33. Search now covers all of a searcher's fields at once, each with its
+own term, with an opt-in "allow partial matches" checkbox (default off:
+strict AND across every non-blank criterion).**
+Context: `/search` only ever let you search one field title at a time.
+Asked directly: can a search cover more than one field, and can results
+that match everything be distinguished from results that only match some.
+Confirmed up front (AskUserQuestion) which of two readings was meant — one
+query checked against several titles, or a separate query per title — and
+it's the latter: e.g. Favorite Book contains "Dune" *and* Hobby contains
+"Chess" are two independent criteria, not one term fanned out.
+What changed, `src/page.ts`'s `renderSearch`: one text input per field
+title the searcher currently holds (decision 5's "scoped to a field you
+already hold" still gates which rows even exist), a new unlabelled
+checkbox — "Allow partial matches" — and two result groups: "Matches all
+N" (people satisfying every non-blank criterion) first, then "Matches
+some" (at least one, not all) after. Each result row lists which
+title(s) matched and their content, same decision-5 shape as before (only
+the matched field's content, nothing else of that person), still linking
+to `/u/<username>` per decision 31.
+What the checkbox actually controls: unchecked (default) excludes anyone
+who fails any non-blank criterion entirely — equivalent to today's
+single-field behavior generalized to N fields, nobody sees a partial-match
+section at all. Checked includes everyone who satisfies at least one
+criterion, split into the two groups above. Defaulting off was explicit,
+not incidental: a search that silently broadened from "every field
+matches" to "some fields match" the moment a second row is filled in
+would be a quiet widening of what search surfaces, the same category of
+decision rule 4 and decision 31 both treat as something to write down, not
+default into.
+`src/data.ts`: `searchField(title, query, excludeUserId)` replaced by
+`searchFields(criteria: {title, query}[], excludeUserId, allowPartial)`,
+returning one row per matching user with the list of titles/content they
+matched — count of that list is exactly what the two result groups split
+on. No schema change; still one `LIKE` clause per criterion, still
+case-insensitive on title via the existing `COLLATE NOCASE` column.
+`field_search` audit events: unchanged shape, one event per non-blank
+title searched (decision 19's per-title logging still holds, just emitted
+N times per request instead of once).
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a

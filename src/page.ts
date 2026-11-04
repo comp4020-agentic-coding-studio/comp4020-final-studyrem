@@ -1,5 +1,5 @@
 // HTML templating. No framework: a handful of pages, each a template literal.
-import type { Field, FieldMatch, Suggestion } from "./data.ts";
+import type { Field, SearchResult, Suggestion } from "./data.ts";
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -266,11 +266,11 @@ export function renderOwner(
   isError = false,
 ): string {
   const items = fields
-    .map((f) =>
+    .map((f, i) =>
       fieldItem(
         f,
         `<div class="field-actions">
-<a href="/search?title=${encodeURIComponent(f.title)}">Search for this</a>
+<a href="/search#q-${i}">Search for this</a>
 <form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
 </div>`,
       ),
@@ -327,7 +327,7 @@ ${items}
   source.addEventListener("fields", (e) => {
     const fields = JSON.parse(e.data);
     const newlyArrived = [];
-    list.replaceChildren(...fields.map((f) => {
+    list.replaceChildren(...fields.map((f, i) => {
       const li = document.createElement("li");
       li.dataset.fieldId = f.id;
       const h = document.createElement("h2");
@@ -343,7 +343,7 @@ ${items}
       deleteButton.textContent = "Remove";
       deleteForm.append(deleteButton);
       const searchLink = document.createElement("a");
-      searchLink.href = "/search?title=" + encodeURIComponent(f.title);
+      searchLink.href = "/search#q-" + i;
       searchLink.textContent = "Search for this";
       const actions = document.createElement("div");
       actions.className = "field-actions";
@@ -442,34 +442,72 @@ ${items}
   );
 }
 
-// Scoped to one field title the searcher already holds (checked in
-// server.ts, not here). Each result links to /u/<username> (decision 31):
-// that route re-checks mutuality itself, so the link never shows a viewer
-// anything decision 3's rule wouldn't already let them see directly.
-export function renderSearch(username: string, title: string, query: string, results: FieldMatch[]): string {
-  const items = results
+export interface SearchRow {
+  title: string;
+  query: string;
+}
+
+const resultItem = (r: SearchResult): string =>
+  `<li><a href="/u/${encodeURIComponent(r.username)}"><h2>${escapeHtml(r.username)}</h2>${r.matches
+    .map((m) => `<p><strong>${escapeHtml(m.title)}:</strong> ${escapeHtml(m.content)}</p>`)
+    .join("\n")}</a></li>`;
+
+// Decision 33: one criterion per field the searcher holds (decision 5's
+// scoping, checked in server.ts against the searcher's own fields, not
+// here). Each result links to /u/<username> (decision 31): that route
+// re-checks mutuality itself, so the link never shows a viewer anything
+// decision 3's rule wouldn't already let them see directly.
+export function renderSearch(
+  username: string,
+  rows: SearchRow[],
+  allowPartial: boolean,
+  hasSearched: boolean,
+  criteriaCount: number,
+  results: SearchResult[],
+): string {
+  const fields = rows
     .map(
-      (r) =>
-        `<li><a href="/u/${encodeURIComponent(r.username)}"><h2>${escapeHtml(r.username)}</h2><p>${escapeHtml(r.content)}</p></a></li>`,
+      (r, i) =>
+        `<label>${escapeHtml(r.title)} <input id="q-${i}" name="q_${i}" value="${escapeHtml(r.query)}" /></label>`,
     )
     .join("\n");
-  const resultsBlock =
-    query.trim() === ""
-      ? ""
-      : `<ul>
-${items || "<li>Nobody else has this field yet.</li>"}
-</ul>`;
-  return layout(
-    `Search "${escapeHtml(title)}" — Commonplace`,
-    `${siteNav(username)}
-<h1>Search within <q>${escapeHtml(title)}</q></h1>
-<p>Only people who also hold this field, and only what they wrote under it.</p>
-<form method="get" action="/search">
-  <input type="hidden" name="title" value="${escapeHtml(title)}" />
-  <label>Search text <input name="q" value="${escapeHtml(query)}" autofocus /></label>
+  const form = `<form method="get" action="/search">
+  <input type="hidden" name="searched" value="1" />
+${fields || "<p>Add a field on your profile first — search works within fields you already hold.</p>"}
+  <label><input type="checkbox" name="partial" value="on"${allowPartial ? " checked" : ""} /> Allow partial matches</label>
   <button type="submit">Search</button>
-</form>
-${resultsBlock}`,
+</form>`;
+  let resultsBlock = "";
+  if (hasSearched && criteriaCount > 0) {
+    const all = results.filter((r) => r.matches.length === criteriaCount);
+    const some = allowPartial ? results.filter((r) => r.matches.length < criteriaCount) : [];
+    const allBlock = `<h2>Matches all ${criteriaCount}</h2><ul>
+${all.map(resultItem).join("\n") || "<li>Nobody matches every field yet.</li>"}
+</ul>`;
+    const someBlock = allowPartial
+      ? `<h2>Matches some</h2><ul>
+${some.map(resultItem).join("\n") || "<li>Nobody else matches.</li>"}
+</ul>`
+      : "";
+    resultsBlock = `${allBlock}\n${someBlock}`;
+  }
+  return layout(
+    "Search — Commonplace",
+    `${siteNav(username)}
+<h1>Search</h1>
+<p>Only people who also hold the field you're searching in, and only what
+they wrote under it.</p>
+${form}
+${resultsBlock}
+<script>
+(() => {
+  // Progressive enhancement over the plain #q-N anchor (which already
+  // scrolls there with no JS): also moves keyboard/screen-reader focus
+  // onto the row "Search for this" was clicked from.
+  const target = location.hash && document.querySelector(location.hash);
+  if (target instanceof HTMLInputElement) target.focus();
+})();
+</script>`,
   );
 }
 

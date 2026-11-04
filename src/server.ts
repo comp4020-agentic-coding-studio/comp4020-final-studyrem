@@ -18,7 +18,7 @@ import {
   mutualFields,
   recordSuggestionShown,
   removeField,
-  searchField,
+  searchFields,
   suggestField,
   verifyPassword,
 } from "./data.ts";
@@ -185,21 +185,25 @@ const server = createServer((req, res) => {
           audit("unauthorized", { path, method });
           return redirect(res, "/");
         }
-        const title = (url.searchParams.get("title") ?? "").trim();
-        const query = (url.searchParams.get("q") ?? "").trim();
-        // Decision 5: scoped to a field you already hold — checked here,
-        // server-side, not just hidden in the UI. Case-insensitive, matching
-        // the fields.title column's COLLATE NOCASE (this check runs in JS,
-        // not SQL, so it needs its own fold).
-        const owns =
-          title !== "" && loadFields(user.id).some((f) => f.title.toLowerCase() === title.toLowerCase());
-        if (!owns) {
-          res.writeHead(403, { "Content-Type": "text/plain" });
-          return res.end("you don't have that field");
+        // Decision 33: one row per field the searcher currently holds, in
+        // that fixed order — so each row's search text arrives as `q_<i>`,
+        // matched to `ownFields[i]` by position. The title itself is never
+        // read from the request: criteria are built entirely from the
+        // user's own fields server-side, so decision 5's "scoped to a field
+        // you already hold" can't be bypassed by crafting the query string.
+        const ownFields = loadFields(user.id);
+        const allowPartial = url.searchParams.get("partial") === "on";
+        const rows = ownFields.map((f, i) => ({
+          title: f.title,
+          query: (url.searchParams.get(`q_${i}`) ?? "").trim(),
+        }));
+        const criteria = rows.filter((r) => r.query !== "");
+        const hasSearched = url.searchParams.has("searched");
+        const results = criteria.length === 0 ? [] : searchFields(criteria, user.id, allowPartial);
+        for (const { title } of criteria) {
+          audit("field_search", { userId: user.id, username: user.username, title, resultCount: String(results.length) });
         }
-        const results = query === "" ? [] : searchField(title, query, user.id);
-        audit("field_search", { userId: user.id, username: user.username, title, resultCount: String(results.length) });
-        return html(res, 200, renderSearch(user.username, title, query, results));
+        return html(res, 200, renderSearch(user.username, rows, allowPartial, hasSearched, criteria.length, results));
       }
 
       const profile = method === "GET" && path.match(/^\/u\/([^/]+)(\/events)?\/?$/);

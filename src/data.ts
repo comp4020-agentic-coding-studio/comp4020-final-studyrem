@@ -249,23 +249,59 @@ export function recordSuggestionShown(viewerId: string, title: string): void {
   ).run(viewerId, title);
 }
 
+export interface SearchCriterion {
+  title: string;
+  query: string;
+}
+
 export interface FieldMatch {
-  username: string;
+  title: string;
   content: string;
 }
 
-// Scoped to one field title, excludes the searcher's own fields. Only
-// username + the matching field's content ever come back — decision 5
-// shares exactly that one field, nothing else of the matched person.
-export function searchField(title: string, query: string, excludeUserId: string): FieldMatch[] {
-  const escaped = query.replace(/[\\%_]/g, (c) => `\\${c}`);
-  const rows = db
-    .prepare(
-      `SELECT u.username, f.content FROM fields f
-       JOIN users u ON u.id = f.user_id
-       WHERE f.title = ? AND u.id != ? AND f.content LIKE '%' || ? || '%' ESCAPE '\\'
-       ORDER BY f.created_at`,
-    )
-    .all(title, excludeUserId, escaped) as unknown as FieldMatch[];
-  return rows;
+export interface SearchResult {
+  username: string;
+  matches: FieldMatch[];
+}
+
+function escapeLike(query: string): string {
+  return query.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+// Decision 33: one criterion per field the searcher holds (decision 5's
+// "scoped to a field you already hold" still gates which titles can even
+// be searched — checked per-criterion here, not just hidden in the UI).
+// Only usernames and the specific matched titles/content ever come back —
+// decision 5's "nothing else of the matched person" generalized to N
+// fields instead of one.
+//
+// allowPartial=false: only users satisfying every criterion are returned
+// (today's single-field behavior, generalized). allowPartial=true: anyone
+// satisfying at least one criterion is returned, with `matches.length`
+// telling the caller how many of the N criteria they hit — the "matches
+// all" vs. "matches some" split is the caller's job, not this function's.
+export function searchFields(
+  criteria: SearchCriterion[],
+  excludeUserId: string,
+  allowPartial: boolean,
+): SearchResult[] {
+  const byUser = new Map<string, SearchResult>();
+  for (const { title, query } of criteria) {
+    const rows = db
+      .prepare(
+        `SELECT u.username, f.content FROM fields f
+         JOIN users u ON u.id = f.user_id
+         WHERE f.title = ? AND u.id != ? AND f.content LIKE '%' || ? || '%' ESCAPE '\\'
+         ORDER BY f.created_at`,
+      )
+      .all(title, excludeUserId, escapeLike(query)) as unknown as { username: string; content: string }[];
+    for (const row of rows) {
+      const entry = byUser.get(row.username) ?? { username: row.username, matches: [] };
+      entry.matches.push({ title, content: row.content });
+      byUser.set(row.username, entry);
+    }
+  }
+  const results = [...byUser.values()].filter((r) => allowPartial || r.matches.length === criteria.length);
+  results.sort((a, b) => b.matches.length - a.matches.length || a.username.localeCompare(b.username));
+  return results;
 }
