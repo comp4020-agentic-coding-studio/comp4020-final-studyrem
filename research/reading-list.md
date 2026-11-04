@@ -71,6 +71,27 @@ true, which no test can check by construction.
   fabricated-provenance incident (manufacturing a plausible source, not just
   passively agreeing).
 
+**Two more compact, reinforcing findings** (not full sections — just worth
+having on hand):
+- *Overconfidence is systematic, not occasional*: multiple studies converge
+  on LLMs being miscalibrated toward overconfidence — one benchmark found
+  nominal 99% confidence intervals covered the true answer only ~65% of the
+  time; another found models assign up to 26% higher confidence to their
+  *own* responses than to equivalent external ones ("ownership bias" —
+  search "LLMs are overconfident FermiEval" / "popular but wrong
+  overconfidence knowledge popularity"). Reinforces section A: there's no
+  usable confidence signal to lean on instead of verifying directly.
+- *Instruction/context decay explains why a standing rule stops holding*:
+  research on long-context instruction-following finds adherence to an
+  earlier-stated instruction degrades as conversation length grows — one
+  self-chat study measured ~39% average performance drop within eight
+  rounds, with reliability falling faster than raw accuracy (search "context
+  decay LLM instructions" / "attention dilution system prompt"). Directly
+  relevant to the unrequested-branch-and-PR incident and the general pattern
+  of a CLAUDE.md rule holding for a while and then silently not — this is a
+  structural reason a written rule needs *re-checking*, not just writing
+  down once.
+
 **The one mitigation with real evidence behind it** — independent,
 fresh-context verification (maker-checker pattern): a document-intelligence
 study reports hallucination reduced from 10.0% to 0.29% via independent
@@ -83,6 +104,64 @@ contamination but "does not change who is accountable," and at least one
 benchmarking note found architecture alone didn't guarantee a stronger
 review — the verifier's own scoping mattered as much as the fresh context.
 Cite the mitigation as evidence-backed-but-partial, not solved.
+
+---
+
+## A2. Why independent agents converge on the same wrong answer
+
+New thread, prompted by re-reading the Sloan/Balkan incident itself: two
+*unrelated* agents (this project and a classmate's riff8, no shared context)
+independently pulled the identical two citations into the very first README
+draft. Section A explains why a single agent's self-report can't be trusted;
+this explains the specific, different thing that happened there — why
+*independent* agents land on the *same* unreliable answer, which is what
+made the coincidence so legible as a pattern in the first place (a lone
+bad citation looks like one agent's mistake; two unrelated agents making the
+identical mistake looks like something structural).
+
+- **Jiang, Chai, Li, et al., "Artificial Hivemind: The Open-Ended
+  Homogeneity of Language Models (and Beyond)"** (NeurIPS 2025 Best Paper,
+  arXiv:2510.22954) — directly on point and the strongest citation in this
+  whole list for this specific claim. Tests 70+ models on 26K open-ended
+  queries and finds not just intra-model repetition but *inter-model*
+  homogeneity: independently trained models converge on highly similar
+  content, with an average of ~8 unique models appearing in the same
+  top-50 response cluster for a given query — sometimes inter-model
+  similarity exceeds intra-model similarity. This is a citable, measured,
+  NeurIPS-best-paper-level version of exactly what the Sloan/Balkan
+  coincidence demonstrated once, informally, between two student projects.
+  Related root-cause paper: **"Is Convergence Inevitable? Tracing Output
+  Homogeneity Back to Base Models"** (arXiv:2608.11426).
+- **Mechanism (two converging explanations, both citable)**: post-training
+  alignment is implicated — preference optimization (RLHF/DPO) measurably
+  shrinks output diversity, and LLM judges/reward models used in alignment
+  tend to prefer modal, already-common outputs, reinforcing convergence
+  (see the homogenization literature cluster, e.g.
+  arxiv.org/html/2601.06116). Separately, similar architectures, training
+  objectives, and alignment procedures across labs can produce converging
+  internal representations even with no shared training data
+  (arXiv:2609.06769 makes this point in a legal-judgment context). Either
+  mechanism explains why the "genre-matching" failure (citing what a kind of
+  essay *usually* cites, not what this specific app needs) isn't one
+  agent's idiosyncratic shortcut — it's closer to a predictable product of
+  how these models are trained, which generalizes the incident from "my
+  agent did this" to "this is what the training process optimizes for."
+- **Counter-case worth including**: "Revisiting LLM Homogeneity Through a
+  Multidimensional Lens" (arXiv:2611.01549) argues some of the measured
+  homogeneity is in surface *form* (phrasing conventions) rather than
+  substantive content, and that embedding-similarity metrics may overstate
+  the effect — a reason not to overclaim "all models think alike," only
+  that convergence on genre-typical, lowest-effort answers (like a
+  frequently-cited pair of essays for a certain kind of app) is measured and
+  real, which is the narrower, defensible version of the claim.
+
+This section pairs naturally with A: A explains why you can't trust one
+agent's account of its own reasoning; A2 explains why comparing against a
+*second* agent doesn't automatically fix that either, if the two agents were
+always likely to converge on the same plausible-sounding, unverified answer
+for structural reasons. The riff8 comparison in PROCESS.md only worked
+because it was an independent *human* noticing the shared pattern across two
+transcripts — not because having two agents was itself a safeguard.
 
 ---
 
