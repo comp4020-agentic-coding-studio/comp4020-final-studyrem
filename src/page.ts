@@ -122,6 +122,9 @@ const STYLE = `
   li:first-child { border-top: 0; }
   li h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
   li p { margin: 0 0 0.6rem; white-space: pre-wrap; }
+  li > a { display: block; color: inherit; text-decoration: none; }
+  li > a:hover h2, li > a:focus-visible h2 { color: var(--accent); }
+  li > a p { color: var(--text-muted); }
   .field-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
   .field-actions a { font-size: 0.95rem; }
   .field-actions form.inline button {
@@ -395,11 +398,15 @@ ${items}
 }
 
 // Scoped to one field title the searcher already holds (checked in
-// server.ts, not here). No link out to a full profile: that would leak
-// more than the one field decision 5 says this page may share.
+// server.ts, not here). Each result links to /u/<username> (decision 31):
+// that route re-checks mutuality itself, so the link never shows a viewer
+// anything decision 3's rule wouldn't already let them see directly.
 export function renderSearch(title: string, query: string, results: FieldMatch[]): string {
   const items = results
-    .map((r) => `<li><h2>${escapeHtml(r.username)}</h2><p>${escapeHtml(r.content)}</p></li>`)
+    .map(
+      (r) =>
+        `<li><a href="/u/${encodeURIComponent(r.username)}"><h2>${escapeHtml(r.username)}</h2><p>${escapeHtml(r.content)}</p></a></li>`,
+    )
     .join("\n");
   const resultsBlock =
     query.trim() === ""

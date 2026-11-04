@@ -658,6 +658,30 @@ mutual profile with no overlap (empty state), search with a result — each
 at ~1280px and ~390px width, confirming no horizontal overflow and the
 disclosure/forms remain reachable and fillable at both sizes.
 
+**31. Search results now link to the matched person's mutual profile
+(`/u/<username>`), reversing part of decision 5.**
+Context: decision 5 deliberately left search results as username + matched
+content only, no link out, reasoning that a link would show more of the
+matched person than the one field search itself shares. Revisited because
+search is this app's actual discovery surface — the way two strangers who
+don't already know each other find and meet via a shared field — and a
+result a viewer can't act on defeats that purpose. Decision: search exists
+*to* connect people, not just to preview a field in isolation.
+Why this doesn't weaken decision 3's headline principle: `/u/<username>`
+(decision 20) independently recomputes `mutualFields(owner, viewer)` on
+every hit — it was never gated by how the viewer arrived there. A search
+result's link can only ever show a viewer what they already had a
+standing right to see by holding the same fields; it exposes nothing the
+viewer couldn't already reach by typing the username into the URL bar
+directly. What decision 5 avoided (search leaking *extra* access) was
+never actually at stake; what it also gave up — search working as a
+connection mechanism — was the part worth keeping.
+What changed: `src/page.ts`'s `renderSearch` wraps each result in an
+`<a href="/u/<username>">`; `/u/<username>` itself, `mutualFields`, and the
+mutuality check are untouched. No change to what `searchField` returns or
+logs (`field_search` still records title/query/count only, per decision
+19).
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
