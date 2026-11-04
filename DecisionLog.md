@@ -742,6 +742,52 @@ case-insensitive on title via the existing `COLLATE NOCASE` column.
 title searched (decision 19's per-title logging still holds, just emitted
 N times per request instead of once).
 
+**34. Search fields are added one at a time (pick from a dropdown, click
+Add) instead of every held field being pre-listed; each row has its own
+Remove.**
+Context: decision 33 made every field the searcher holds show up as a row
+on `/search` whenever they had more than a couple. Feedback: the function
+was correct but didn't feel right — "throwing everything on the page" at
+once, rather than letting the searcher build up a search deliberately.
+Confirmed up front (AskUserQuestion) the actual mechanics wanted: a
+dropdown + Add/Remove, JS-enhanced for an instant no-reload update, but
+falling back to a plain page reload with JS off — matching the site's
+existing progressive-enhancement rule (decision 30: every form here must
+work without JS).
+What changed, `src/server.ts`'s `/search` handler: criteria are no longer
+built from *every* field the user holds — only the ones named by a `field`
+param, repeated once per row the searcher has actively added, in that
+order. The title in each `field` param is still only ever used to look up
+a title the user actually holds (`ownTitlesByLower`, never trusted
+outright) — decision 5's scoping is enforced exactly as before, just
+against a subset of the user's fields instead of all of them. `?add=1&
+add_field=<title>` appends a row for a title not yet added; `?remove=<i>`
+drops row `i`; both are evaluated server-side on the row set the request's
+own `field`/`q` params describe, so Add and Remove compose with whatever
+was already on the form.
+`src/page.ts`'s `renderSearch`: each added row carries its title forward
+as a hidden `field` input so later Add/Remove submits don't lose it; the
+Add control is a `<select>` of titles *not* yet added (empty once every
+held field is on the form) plus a plain submit button
+(`formaction="/search?add=1"`, `formnovalidate` so an empty query field
+doesn't block it); each row's Remove button is the same pattern pointed at
+`?remove=<i>`. All of this works as a normal GET with JS entirely off. A
+small script on top intercepts those same button clicks, replays the
+identical request via `fetch`, and swaps in the returned form and results
+(`#search-results`, a dedicated wrapper — needed because a result's own
+`<h2>` username heading would otherwise collide with a naive "swap every
+h2/ul on the page" approach) with no reload; it falls through to a real
+form submit if the fetch fails for any reason.
+Not changed: decision 33's strict/partial matching and the "matches
+all"/"matches some" split, decision 31's links to `/u/<username>`,
+`searchFields` in `src/data.ts`. This is purely how the criteria set gets
+built up, not what matching means once it's built.
+`spec/search.test.ts` rewritten for the new `field`/`q` (repeated pairs,
+one per added row) request shape, replacing decision 33's positional
+`q_<i>` scheme; added coverage for Add, Remove, the dropdown only offering
+not-yet-added titles, and an untrusted `field` param being silently
+dropped.
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a

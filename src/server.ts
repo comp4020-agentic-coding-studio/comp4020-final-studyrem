@@ -25,6 +25,7 @@ import {
 import type { User } from "./data.ts";
 import { notifyFieldsChanged, subscribeMutualView, subscribeOwnView } from "./live.ts";
 import { renderLogin, renderMutualProfile, renderNotFound, renderOwner, renderReadme, renderSearch } from "./page.ts";
+import type { SearchRow } from "./page.ts";
 import { clearedCookie, sessionCookie, sessionPayload } from "./session.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -185,25 +186,59 @@ const server = createServer((req, res) => {
           audit("unauthorized", { path, method });
           return redirect(res, "/");
         }
-        // Decision 33: one row per field the searcher currently holds, in
-        // that fixed order — so each row's search text arrives as `q_<i>`,
-        // matched to `ownFields[i]` by position. The title itself is never
-        // read from the request: criteria are built entirely from the
-        // user's own fields server-side, so decision 5's "scoped to a field
-        // you already hold" can't be bypassed by crafting the query string.
+        // Decision 34: the searcher adds rows one at a time (the "field"
+        // param names which of their titles is on the form, repeated once
+        // per active row, in the order they were added), rather than every
+        // held field being pre-listed. The title is only ever used to look
+        // up a title the user actually holds — never trusted outright — so
+        // decision 5's "scoped to a field you already hold" can't be
+        // bypassed by naming an arbitrary title in the query string.
         const ownFields = loadFields(user.id);
+        // Keyed by lowercase so a title is only ever rendered back in its
+        // one true (owner-chosen) casing, never whatever casing happened to
+        // arrive in the query string.
+        const ownTitlesByLower = new Map(ownFields.map((f) => [f.title.toLowerCase(), f.title]));
         const allowPartial = url.searchParams.get("partial") === "on";
-        const rows = ownFields.map((f, i) => ({
-          title: f.title,
-          query: (url.searchParams.get(`q_${i}`) ?? "").trim(),
-        }));
+        const addedTitles = url.searchParams.getAll("field");
+        const queries = url.searchParams.getAll("q");
+        const rows: SearchRow[] = [];
+        const seenTitles = new Set<string>();
+        addedTitles.forEach((rawTitle, i) => {
+          const lower = rawTitle.toLowerCase();
+          const ownTitle = ownTitlesByLower.get(lower);
+          // A title can only appear once on the form — a duplicate "field"
+          // param (crafted, or a stale double-submit) is dropped rather than
+          // searching the same title twice.
+          if (!ownTitle || seenTitles.has(lower)) return;
+          seenTitles.add(lower);
+          rows.push({ title: ownTitle, query: (queries[i] ?? "").trim() });
+        });
+        // Add/Remove (plain GETs, no JS required — see renderSearch's own
+        // script for the no-reload layer on top): applied to the row set
+        // built above, before it's rendered back or searched.
+        const removeIndex = url.searchParams.get("remove");
+        if (removeIndex !== null) {
+          const i = Number(removeIndex);
+          if (Number.isInteger(i) && i >= 0 && i < rows.length) rows.splice(i, 1);
+        }
+        if (url.searchParams.get("add") === "1") {
+          const toAdd = ownTitlesByLower.get((url.searchParams.get("add_field") ?? "").toLowerCase());
+          if (toAdd && !seenTitles.has(toAdd.toLowerCase())) rows.push({ title: toAdd, query: "" });
+        }
+        const availableTitles = ownFields
+          .map((f) => f.title)
+          .filter((title) => !rows.some((r) => r.title.toLowerCase() === title.toLowerCase()));
         const criteria = rows.filter((r) => r.query !== "");
         const hasSearched = url.searchParams.has("searched");
         const results = criteria.length === 0 ? [] : searchFields(criteria, user.id, allowPartial);
         for (const { title } of criteria) {
           audit("field_search", { userId: user.id, username: user.username, title, resultCount: String(results.length) });
         }
-        return html(res, 200, renderSearch(user.username, rows, allowPartial, hasSearched, criteria.length, results));
+        return html(
+          res,
+          200,
+          renderSearch(user.username, rows, availableTitles, allowPartial, hasSearched, criteria.length, results),
+        );
       }
 
       const profile = method === "GET" && path.match(/^\/u\/([^/]+)(\/events)?\/?$/);

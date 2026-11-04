@@ -164,6 +164,45 @@ const STYLE = `
     color: var(--text-muted);
   }
   .checkbox-field input { width: auto; }
+  .search-row {
+    display: flex;
+    align-items: end;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    margin: 0 0 0.9rem;
+  }
+  .search-row label { flex: 1; }
+  .search-row .remove-row {
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    font-size: 0.85rem;
+    padding: 0.5rem 0.7rem;
+  }
+  .search-row .remove-row:hover, .search-row .remove-row:active {
+    color: var(--accent-contrast);
+    background: var(--text-muted);
+    border-color: var(--text-muted);
+  }
+  .add-field {
+    display: flex;
+    align-items: end;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    margin: 1.25rem 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .add-field label { flex: 1; }
+  .add-field select {
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    width: 100%;
+  }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
   header h1 { margin-bottom: 0; }
   nav.site {
@@ -282,11 +321,11 @@ export function renderOwner(
   isError = false,
 ): string {
   const items = fields
-    .map((f, i) =>
+    .map((f) =>
       fieldItem(
         f,
         `<div class="field-actions">
-<a href="/search#q-${i}">Search for this</a>
+<a href="/search?field=${encodeURIComponent(f.title)}#q-0">Search for this</a>
 <form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
 </div>`,
       ),
@@ -343,7 +382,7 @@ ${items}
   source.addEventListener("fields", (e) => {
     const fields = JSON.parse(e.data);
     const newlyArrived = [];
-    list.replaceChildren(...fields.map((f, i) => {
+    list.replaceChildren(...fields.map((f) => {
       const li = document.createElement("li");
       li.dataset.fieldId = f.id;
       const h = document.createElement("h2");
@@ -359,7 +398,7 @@ ${items}
       deleteButton.textContent = "Remove";
       deleteForm.append(deleteButton);
       const searchLink = document.createElement("a");
-      searchLink.href = "/search#q-" + i;
+      searchLink.href = "/search?field=" + encodeURIComponent(f.title) + "#q-0";
       searchLink.textContent = "Search for this";
       const actions = document.createElement("div");
       actions.className = "field-actions";
@@ -468,38 +507,79 @@ const resultItem = (r: SearchResult): string =>
     .map((m) => `<p><strong>${escapeHtml(m.title)}:</strong> ${escapeHtml(m.content)}</p>`)
     .join("\n")}</a></li>`;
 
-// Decision 33: one criterion per field the searcher holds (decision 5's
-// scoping, checked in server.ts against the searcher's own fields, not
-// here). Each result links to /u/<username> (decision 31): that route
-// re-checks mutuality itself, so the link never shows a viewer anything
-// decision 3's rule wouldn't already let them see directly.
+// Decision 34: fields are added to the search one at a time rather than
+// every held field being pre-listed — `rows` is only the ones currently
+// added, in that order; `availableTitles` is everything else still pickable
+// from the dropdown. Decision 33's criteria/matching, decision 5's scoping
+// (checked in server.ts against the searcher's own fields, not here), and
+// decision 31's links to /u/<username> are all unchanged — this only
+// reshapes how the row set gets built.
 export function renderSearch(
   username: string,
   rows: SearchRow[],
+  availableTitles: string[],
   allowPartial: boolean,
   hasSearched: boolean,
   criteriaCount: number,
   results: SearchResult[],
 ): string {
-  const fields = rows
+  // Every already-added row is carried forward as a hidden "field" param so
+  // the Add/Remove GETs (plain links/forms, no JS required) don't lose the
+  // rest of the search when one row changes.
+  const carryHidden = (exceptIndex?: number): string =>
+    rows
+      .filter((_, i) => i !== exceptIndex)
+      .map((r) => `<input type="hidden" name="field" value="${escapeHtml(r.title)}" />`)
+      .join("\n");
+
+  const fieldRows = rows
     .map(
-      (r, i) =>
-        `<label>${escapeHtml(r.title)} <input id="q-${i}" name="q_${i}" value="${escapeHtml(r.query)}" /></label>`,
+      (r, i) => `<div class="search-row" id="row-${i}">
+  <label>${escapeHtml(r.title)}
+    <input type="hidden" name="field" value="${escapeHtml(r.title)}" />
+    <input id="q-${i}" name="q" value="${escapeHtml(r.query)}" />
+  </label>
+  <button type="submit" formaction="/search?remove=${i}" formnovalidate class="remove-row">Remove</button>
+</div>`,
     )
     .join("\n");
+
+  const addRow =
+    availableTitles.length > 0
+      ? `<div class="add-field">
+  <label>Add a field to search
+    <select name="add_field">
+${availableTitles.map((t) => `      <option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("\n")}
+    </select>
+  </label>
+  <button type="submit" formaction="/search?add=1" formnovalidate>Add</button>
+</div>`
+      : "";
+
   const optionsBlock =
     rows.length > 0
       ? `<div class="search-options">
     <label class="checkbox-field"><input type="checkbox" name="partial" value="on"${allowPartial ? " checked" : ""} /> Allow partial matches</label>
   </div>`
       : "";
+
+  const emptyNotice =
+    rows.length === 0 && availableTitles.length === 0
+      ? "<p>Add a field on your profile first — search works within fields you already hold.</p>"
+      : rows.length === 0
+        ? "<p>Add a field below to start searching.</p>"
+        : "";
+
   const form = `<form method="get" action="/search">
   <input type="hidden" name="searched" value="1" />
   ${optionsBlock}
-${fields || "<p>Add a field on your profile first — search works within fields you already hold.</p>"}
+${fieldRows}
+${emptyNotice}
+${addRow}
   <button type="submit">Search</button>
 </form>`;
-  let resultsBlock = "";
+
+  let resultsInner = "";
   if (hasSearched && criteriaCount > 0) {
     const all = results.filter((r) => r.matches.length === criteriaCount);
     const some = allowPartial ? results.filter((r) => r.matches.length < criteriaCount) : [];
@@ -511,8 +591,9 @@ ${all.map(resultItem).join("\n") || "<li>Nobody matches every field yet.</li>"}
 ${some.map(resultItem).join("\n") || "<li>Nobody else matches.</li>"}
 </ul>`
       : "";
-    resultsBlock = `${allBlock}\n${someBlock}`;
+    resultsInner = `${allBlock}\n${someBlock}`;
   }
+  const resultsBlock = `<div id="search-results">${resultsInner}</div>`;
   return layout(
     "Search — Commonplace",
     `${siteNav(username)}
@@ -528,6 +609,38 @@ ${resultsBlock}
   // onto the row "Search for this" was clicked from.
   const target = location.hash && document.querySelector(location.hash);
   if (target instanceof HTMLInputElement) target.focus();
+
+  // Decision 34: Add/Remove already work as plain form submits (each
+  // button's formaction reloads the page with the row added/removed) — this
+  // only intercepts the click to do the same thing without a reload, when
+  // JS is available. Falls through to the real submit if anything's missing.
+  // The form/results nodes are swapped out on every Add/Remove, so this
+  // always re-queries the live ones rather than closing over stale references.
+  async function swapIn(url) {
+    const res = await fetch(url, { headers: { "X-Requested-With": "fetch" } });
+    if (!res.ok) return false;
+    const html = await res.text();
+    const next = new DOMParser().parseFromString(html, "text/html");
+    const nextForm = next.querySelector("form[action='/search']");
+    const nextResults = next.querySelector("#search-results");
+    const currentForm = document.querySelector("form[action='/search']");
+    if (!nextForm || !nextResults || !currentForm) return false;
+    document.getElementById("search-results")?.replaceWith(nextResults);
+    currentForm.replaceWith(nextForm);
+    return true;
+  }
+
+  document.body.addEventListener("click", async (e) => {
+    const button = e.target.closest("button[formaction]");
+    const currentForm = document.querySelector("form[action='/search']");
+    if (!button || !currentForm || !currentForm.contains(button)) return;
+    e.preventDefault();
+    const params = new URLSearchParams(new FormData(currentForm));
+    const action = new URL(button.getAttribute("formaction"), location.href);
+    action.searchParams.forEach((v, k) => params.set(k, v));
+    const ok = await swapIn("/search?" + params.toString());
+    if (!ok) button.closest("form").submit();
+  });
 })();
 </script>`,
   );
