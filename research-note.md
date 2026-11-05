@@ -122,19 +122,42 @@ count as having consulted it.]
 [Close with the calibration source: why this is maintained over time, not
 solved once.]
 
-<!-- SECTION 6 — COUNTER-CASE, TAKEN SERIOUSLY (90-110 words)
+<!-- SECTION 6 — COUNTER-CASE, TAKEN SERIOUSLY (100-130 words, widened
+slightly for the sharper version below)
 Required by the HD band explicitly. Don't strawman the alternative
 position — concede what it's genuinely good for, then state PRECISELY why
 it's a different axis, not a weaker version of this note's claim. Name the
-axes explicitly (e.g. capability vs. epistemic) rather than just saying
-"different failure mode." Field literature only — no project reference
-needed here, the distinction should hold on its own. -->
+axes explicitly as capability vs. epistemic, not just "different failure
+mode." Field literature only — no project reference needed here, the
+distinction should hold on its own.
 
-[Name the strongest alternative position and its source. State plainly
-what axis of the problem it actually addresses, and concede real evidence
-for it. Then state explicitly why that axis is orthogonal to — not a
-weaker version of — this note's claim: what can still go wrong on this
-note's axis even when the alternative position's concern is fully solved.]
+SHARPENED VERSION (checked against field vocabulary, don't invent new
+terms): concede that scope/permissions, done WELL, means a representational
+rule is not enough — a prompt-level instruction (e.g. a config-file "don't
+do X") is interpreted by the model and can be narrated past, same as any
+other generated text; what actually restricts capability is an
+architectural gate outside the model's control (a hook running as plain
+code, a permission system that actually refuses the call) — this is a live
+distinction in the field, sometimes put as "prompts are suggestions, hooks
+are enforcement," with real empirical backing: prompt-based/LLM-judge
+guardrails have been bypassed at high rates (e.g. OpenAI's Guardrails via
+prompt injection; Azure/Meta prompt-shield evasion rates above 70% in one
+study). Bostrom's older capability-control-vs-motivation-selection
+framework (*Superintelligence*) is a useful anchor here too — and Bostrom's
+own conclusion, that capability control is "at best a temporary and
+auxiliary measure," independently supports the move this section needs:
+even a GATE (not just a rule) only closes the capability question — can
+the agent complete the action — not the epistemic one — is its account of
+having completed it, or of what it found, trustworthy. A hard-blocked
+agent can still self-report "I'm ready to deploy." That's the precise,
+citable version of "orthogonal axis, not a weaker version." -->
+
+[Name the strongest alternative position (scope/permissions) and concede
+what rigorous versions of it actually require — architectural enforcement,
+not just a stated rule — with its citation. State plainly that this closes
+the capability axis. Then state explicitly, with the gate/self-report
+example, why the epistemic axis survives even when the capability axis is
+fully solved.]
 
 <!-- SECTION 7 — CLOSE (30-50 words)
 No new material. Land the argument — ideally naming what's missing from

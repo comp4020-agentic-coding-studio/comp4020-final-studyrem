@@ -441,6 +441,59 @@ flagged in section A:
   oversight mechanisms) — both solid if the note ends up needing a scoping
   subsection, skip otherwise.
 
+**Added: what makes scoping/permissions actually work, and why it doesn't
+transfer to self-report — the representational-vs-architectural
+distinction.** Checked against the field's own established vocabulary
+(not inventing new terms) before adding this:
+- **The core distinction, independently converged on by multiple sources**:
+  a rule stated in a prompt or config file (e.g. a CLAUDE.md instruction)
+  is *representational* — it's text the model interprets, and the same
+  generative process that can be told "don't do X" can also narrate its
+  way past that instruction. A rule enforced by a layer outside the model
+  (a hook that runs as plain code before a tool executes, a permission
+  system that actually refuses the syscall, a merge that's actually
+  blocked) is *architectural* — the decision isn't the model's to make at
+  all. This is sometimes stated plainly as "prompts are suggestions, hooks
+  are enforcement" (see e.g.
+  https://austen.info/blog/prompt-design-for-headless-agents/ and
+  https://dev.to/praetorian_guard/we-stopped-treating-ai-agents-like-chatbots-and-started-treating-them-like-os-processes-3dml
+  for the practitioner framing). A more formal academic treatment of
+  exactly this gap — titled, tellingly, **"When 'Do Not' Is Not Deny:
+  Security Rules in CLAUDE.md vs Built-In Controls"** —
+  https://arxiv.org/abs/2608.23550 — read this one directly before citing,
+  it looks like it measures the gap rather than just asserting it, haven't
+  verified the specific numbers yet.
+- **Empirical evidence that representational (prompt-level) enforcement
+  fails, with real bypass rates**: HiddenLayer's "Same Model, Different
+  Hat" research (Oct 2025) bypassed OpenAI's own Guardrails framework via
+  prompt injection — the mechanism is exactly the one above: a judge model
+  built from the same kind of model as the thing it's judging inherits the
+  same vulnerabilities. A separate empirical study found prompt-injection/
+  jailbreak guardrails evaded at rates up to 71.98% (Azure Prompt Shield)
+  and comparably high against Meta Prompt Guard using straightforward
+  evasion techniques — https://arxiv.org/abs/2504.11168. OpenAI's own
+  developer guidance reportedly states plainly that an LLM used as a
+  guardrail "has the same vulnerabilities as your base LLM call itself."
+- **Bostrom's capability control vs. motivation selection** (*Superintelligence*,
+  2014) — the older, pre-LLM theoretical anchor for the same split: capability
+  control (boxing, incentive methods, stunting, tripwires) limits what a
+  system can *do*; motivation selection tries to shape what it *wants*.
+  Bostrom's own verdict is directly useful here: capability control is "at
+  best a temporary and auxiliary measure," not sufficient on its own — which
+  independently confirms, from a source that predates LLMs and self-report
+  concerns entirely, that gating capability doesn't resolve the separate
+  question of whether the system's account of itself can be trusted.
+- **Why this doesn't transfer to the self-report axis, stated precisely**:
+  a gate can stop an action from completing (a blocked merge, a refused
+  syscall), but it cannot make a *statement* true or false — there is no
+  choke point a sentence passes through the way an action does. An agent
+  hard-blocked from deploying can still self-report "I am ready to
+  deploy." Enforcement closes the capability question without touching the
+  epistemic one. Use this to sharpen the counter-case concession: scoping/
+  permissions, done well, means architectural gates rather than
+  representational rules — and even at their best, this only solves a
+  different axis of the problem than this note's claim.
+
 ---
 
 ## F. Context engineering / frameworks (background, trim further if unused)
