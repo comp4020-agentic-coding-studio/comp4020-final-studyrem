@@ -178,6 +178,41 @@ primary source can be misquoted. Keep these as two separate questions
 (does it terminate; does termination need periodic re-confirmation) rather
 than using one citation to answer both.
 
+**Refinement — "beyond generated text" vs. "beyond any agent's control to
+fabricate."** A later suggestion proposed restating the criterion as
+"verification must terminate at a point beyond agents' control" rather
+than "at a non-generated resource." Checked against a real, verified
+source before adopting: **Salfeld-Nebgen, "Governing Actions, Not Agents:
+Institutional Attestation as a Governance Model for Autonomous AI
+Systems"** — https://arxiv.org/abs/2606.26298 — verified directly against
+the full paper (not just the abstract, which doesn't contain the phrase):
+the paper states execution should be conditional on preconditions
+"independently attested and beyond the agent's control to fabricate," and
+is explicitly framed around what it calls "the rogue agent problem" —
+where "a compromised agent operates within its authorised scope while
+pursuing adversarial objectives," a scenario where "runtime behavioural
+monitoring is structurally ineffective because individual actions conform
+to expected patterns." This is a real, independently-converged phrasing of
+close to the same criterion, in the governance/attestation literature
+rather than the self-report literature this list otherwise draws on.
+
+The "beyond agents' control" phrasing is arguably **tighter than "outside
+generated text"** for one reason: it folds the immutability condition
+(section D's "the agent being checked can't rewrite the spec") into the
+same clause as the "not generated text" condition, rather than needing two
+separate requirements. But it needs one explicit guard to avoid quietly
+reopening the second-model problem (section A2/A4): read narrowly as "not
+*this* agent's control," a second model's opinion technically passes —
+this specific agent can't fabricate what a *different* model said. Read
+correctly, "agents" has to mean agents generally, not just the one under
+review — a second model's claim was still fabricated by *an* agent, just a
+different one, so it fails the criterion too. State it explicitly if this
+phrasing is used: *verification must terminate at a point beyond any
+generating agent's control to fabricate or rewrite — not only the agent
+under review, but agents in general.* Otherwise the tighter, cleaner
+wording silently reopens the exact loophole section A4's hedge on
+Artificial Hivemind was added to close.
+
 ---
 
 ## A2. Why independent agents converge on the same wrong answer

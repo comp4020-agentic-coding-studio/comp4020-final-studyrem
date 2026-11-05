@@ -98,26 +98,52 @@ the first one did — rather than resting the whole claim on one number].
 <!-- SECTION 5 — WHAT ACTUALLY TERMINATES THE REGRESS: the positive
 criterion (140-170 words)
 This is the center of the note — the positive claim, not a list of
-insufficiencies. State explicitly what makes a check actually work: it
-touches something outside the chain of generated text (a primary source,
-directly observable state, an immutable spec/test with an independently
-observed result, a human's own memory). MUST include an explicit answer
-to the infinite-regress objection: the regress doesn't terminate at "some
-layer deep enough," it terminates the moment any layer touches something
-that isn't generated text — state this directly, don't just gesture at
-calibration and hope the reader infers it. ONE worked example maximum from
-this project's own history (not three) — everything else gets a clause.
-Close with a trust-calibration source (doesn't need to be AI-specific) for
-why this termination has to be re-confirmed periodically, not solved once. -->
+insufficiencies. State explicitly what makes a check actually work.
 
-[State the positive criterion directly: a check works when X.]
+PREFERRED PHRASING (refined, verified against a real source — checked
+directly against the full paper, not just its abstract): state the
+criterion as "verification must terminate at a point beyond any
+generating agent's control to fabricate or rewrite" rather than just
+"outside generated text." This phrasing is tighter — it folds the
+immutability condition (the source can't be rewritten by the agent being
+checked) into the same clause as the grounding condition, instead of
+needing two separate requirements. Citable precedent for near-identical
+language: Salfeld-Nebgen, "Governing Actions, Not Agents" —
+https://arxiv.org/abs/2606.26298 — "independently attested and beyond
+the agent's control to fabricate," framed around the paper's "rogue
+agent problem" (a compromised agent staying within its authorized scope
+while pursuing adversarial objectives, against which "runtime behavioural
+monitoring is structurally ineffective").
+
+CRITICAL GUARD — do not drop this: "agents' control" must be stated as
+plural/general (agents in general, not just the one under review), or the
+phrasing quietly reopens the second-model loophole from section 4 — read
+narrowly, a second model's opinion is technically "beyond THIS agent's
+control to fabricate," but it was still fabricated by an agent, just a
+different one, so it still fails the criterion. State this explicitly,
+don't leave it to be inferred.
+
+MUST include an explicit answer to the infinite-regress objection: the
+regress doesn't terminate at "some layer deep enough," it terminates the
+moment any layer is beyond any generating agent's control — a primary
+source, directly observable state, an immutable spec/test with an
+independently observed result, a human's own memory. State this directly,
+don't just gesture at calibration and hope the reader infers it. ONE
+worked example maximum from this project's own history (not three) —
+everything else gets a clause. Close with a trust-calibration source
+(doesn't need to be AI-specific) for why this termination has to be
+re-confirmed periodically, not solved once. -->
+
+[State the positive criterion directly, using the "beyond any generating
+agent's control" phrasing, explicitly plural/general.]
 [State the regress-termination answer explicitly: the chain stops at the
-first layer touching Y, not at some depth.]
+first layer beyond any agent's control to fabricate, not at some depth —
+and this rules out a second agent's opinion too, since it's still
+agent-fabricated, just by a different agent.]
 [ONE worked example, in a sentence or two, illustrating the criterion —
 keep it compressed, not a narrated story.]
 [One clause each, if needed, for 1-2 more conditions a check has to meet
-to count as grounding — e.g. the source must be immutable to the agent
-being checked, and the agent's own report of having consulted it doesn't
+— e.g. the agent's own report of having consulted a source doesn't itself
 count as having consulted it.]
 [Close with the calibration source: why this is maintained over time, not
 solved once.]
