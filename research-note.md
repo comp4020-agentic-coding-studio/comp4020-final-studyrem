@@ -132,7 +132,29 @@ don't just gesture at calibration and hope the reader infers it. ONE
 worked example maximum from this project's own history (not three) —
 everything else gets a clause. Close with a trust-calibration source
 (doesn't need to be AI-specific) for why this termination has to be
-re-confirmed periodically, not solved once. -->
+re-confirmed periodically, not solved once.
+
+OPTIONAL BUT STRONG, if there's room (verified, not a restatement of
+anything above — a genuinely separate complication): "beyond any agent's
+control" is necessary but not sufficient on its own if multiple
+independently-sourced checks still share a hidden common root cause.
+Alotaibi et al.'s "Layered LLM Defenses as an Ensemble"
+(https://arxiv.org/abs/2608.28327) measured this directly in a seven-layer
+LLM defense stack: failure correlation was positive across every pair
+tested (ϕ 0.30-0.75), and the dependence was "architectural rather than
+sampling-based" — defenses correlate "through the model they all wrap,"
+even when each is nominally a separate layer. This generalizes a 40-year
+engineering result: Knight & Leveson (1986) found independently-written
+program versions failed on the same inputs far more than chance predicted
+(the independence assumption behind redundant/N-version systems failing
+statistically); a 2024-era reproduction with AI coding agents
+(https://arxiv.org/abs/2606.20158) confirmed the same pattern holds for
+LLM-generated code. If used, state the honest version: redundancy still
+helps in practice (the reproduction found diversity cut mean failures from
+387 to 131 per three-version unit) but less than naive independence would
+predict — "beyond any agent's control" answers whether a check is outside
+the chain; it doesn't by itself answer whether several such checks share a
+hidden common cause. -->
 
 [State the positive criterion directly, using the "beyond any generating
 agent's control" phrasing, explicitly plural/general.]

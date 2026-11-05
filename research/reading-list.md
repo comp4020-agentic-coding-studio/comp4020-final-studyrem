@@ -529,6 +529,96 @@ distinction.** Checked against the field's own established vocabulary
   representational rules — and even at their best, this only solves a
   different axis of the problem than this note's claim.
 
+**Added — a necessary complication to the positive criterion in section A:
+"outside the chain" / "beyond agents' control" is necessary but not
+sufficient if multiple independently-sourced checks still share a hidden
+common cause.** This is a real, verified, 40-year-old engineering concern,
+not a rephrasing of the existing criterion — it asks a different question:
+even granting two checks are each individually outside the chain, do they
+actually fail on different inputs, or do they share a root cause that
+defeats both at once?
+
+- **Knight & Leveson, "An Experimental Evaluation of the Assumption of
+  Independence in Multiversion Programming"** (*IEEE Transactions on
+  Software Engineering*, 1986) — the foundational result. N-version
+  programming assumes independently-written implementations of the same
+  spec will fail on different inputs, so majority voting catches errors.
+  27 independently-written programs were tested against a large input
+  set; failures correlated far more than the independence assumption
+  predicted — confirmed via Wikipedia's summary (the primary PDF itself
+  could not be extracted as readable text; cite via a source that quotes
+  it directly if a tighter citation is needed): "the assumption of
+  independence of failures in N-version programs failed statistically."
+- **Ron, Baudry, Monperrus, "N-Version Programming with Coding Agents"**
+  — https://arxiv.org/abs/2606.20158 — verified directly: the actual 2024-
+  era reproduction of Knight & Leveson using AI coding agents (NOT
+  "Builder, Defender, Breaker," which was checked and found to build on
+  different foundational work — see correction below). 48 agent-generated
+  implementations of the Knight-Leveson Launch Interceptor spec, tested
+  against 1,000,000 randomized inputs. Confirmed finding: "substantial
+  common-mode failure, along the findings of Knight-Leveson," much of it
+  traceable to where the specification itself was ambiguous. Diversity
+  still helped in practice — three-version majority-vote units dropped
+  mean failure count from 387.44 (single versions) to 130.99 (triples),
+  with 11,844 units showing zero failures — so the honest reading is
+  "correlated failure is real and large, but diversity still buys a
+  partial, measurable gain," not "redundancy is worthless."
+- **Correction, caught during verification**: an earlier pass attributed
+  the Knight-Leveson AI-reproduction connection to "Builder, Defender,
+  Breaker: Measurable Independence and Bounded Autonomy..." (arXiv:2607.03215,
+  Ghanem). Checked directly — that paper does NOT reference Knight & Leveson
+  at all; it builds on a different foundational source, Eckhardt & Lee's
+  coincident-failure model. Still relevant and worth keeping as a separate
+  citation: it introduces the idea of a "shared generative substrate"
+  (training data, model family, alignment, vendor, toolchain) and argues
+  "organisational independence...no longer implies statistical independence
+  once roles share a substrate" — directly applicable to a builder/
+  verifier pair drawn from the same model family, but cite it on its own
+  terms, not as an extension of Knight-Leveson.
+- **Alotaibi, Jabbar, Al-Azani, Ahmed, "Layered LLM Defenses as an
+  Ensemble: Access Tiers, Inference Cost, and the Measured Failure
+  Correlation Between Defense Layers"** —
+  https://arxiv.org/abs/2608.28327 — verified directly against the
+  abstract (confirmed exact wording, not a paraphrase): a seven-layer LLM
+  defense stack showed "failure correlation is positive in all fifteen
+  measurable pairs (ϕ from 0.30 to 0.75)," and after controlling for
+  task difficulty, "the dependence is predominantly common-cause" and
+  "architectural rather than sampling-based" — "members correlate through
+  the model they all wrap." This is the direct, quantified version of the
+  idea: stacking defenses built from the same underlying model family
+  doesn't buy the independence a naive "more layers" intuition assumes.
+- **Zanolini, "Correlated Failures of AI Approval Monitors"** —
+  https://arxiv.org/abs/2610.29178 — verified as a real, legitimate 2026
+  paper (initially flagged as suspicious during verification because it
+  references model names unfamiliar from training data — e.g. "Claude
+  Opus 5.5," "GPT-6 Astra" — which turned out to be a false alarm from
+  stale knowledge, not a sign of fabrication; confirmed real via an
+  independent search hit, GitHub discussion, and a second research-index
+  listing). Twelve monitor models reviewing payment approvals: one attack,
+  optimized against a single model family, fooled 10 of 12 monitors
+  simultaneously. The fix that actually worked was counting *independent
+  evidence sources*, not counting *votes* — a rule based on source
+  diversity blocked only 0.9% of correct payments vs. 7.4% for the best
+  vote-counting rule at equal safety. Directly supports the point that
+  "how many checks" matters less than "how many genuinely independent
+  sources of evidence those checks are drawing on."
+- **Correction, caught during verification**: a Medium/blog-tier source
+  had attributed a "common-mode failure" critique directly to Reason's
+  Swiss Cheese Model and cited Fukushima as its textbook example. Checked
+  Wikipedia's Swiss Cheese Model page directly — it does **not** mention
+  common-mode or common-cause failure anywhere, and does not frame an
+  explicit "independence assumption" as part of Reason's own model; that
+  framing exists only in secondary commentary, not in the primary
+  model/page. The underlying engineering concept (Common Cause Failure /
+  Common Mode Failure) is real, rigorous, and separately well-established
+  — IEC 61511 defines CCF formally as "a failure resulting from one or
+  more events that cause failures of two or more separate channels in a
+  multiple-channel system" — but don't attribute this critique to Reason's
+  model by name without a source that actually makes that specific
+  connection; cite the CCF/CMF literature on its own terms instead (search
+  "common cause failure reliability engineering IEC 61511" for the
+  general definition if a non-LLM-specific anchor is wanted).
+
 ---
 
 ## F. Context engineering / frameworks (background, trim further if unused)
