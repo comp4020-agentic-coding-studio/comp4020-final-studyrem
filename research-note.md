@@ -22,6 +22,20 @@ three-way split (README = good for this app; PROCESS = good for how I
 worked; this note = good practice in the field). Check this rule again at
 the end: if personal evidence is doing more than ~15% of the note's words,
 cut it back before submission.
+
+EPISTEMIC STATUS RULE, separate from and in addition to the balance rule
+above: project anecdotes are facts plus this document's own surmise about
+what they mean -- never proof of a field-level mechanism. Whatever worked
+example makes it into section 5, phrase it as "X happened here, which is
+consistent with [citation]'s finding" -- never as "X shows," "X proves,"
+or "X demonstrates" [citation]'s finding. A single N=1 incident from one
+project cannot establish that a measured, controlled finding from the
+field literature is what actually caused it; it can only illustrate that
+the finding's predicted pattern also showed up here. This matters
+specifically for this note's own argument: treating a plausible project
+anecdote as if it settled a claim is the exact failure mode section 2/3
+describes -- don't let the note's own evidentiary practice contradict its
+thesis.
 -->
 
 # Research note: [working title — state the position, don't describe the topic]
@@ -180,7 +194,9 @@ first layer beyond any agent's control to fabricate, not at some depth —
 and this rules out a second agent's opinion too, since it's still
 agent-fabricated, just by a different agent.]
 [ONE worked example, in a sentence or two, illustrating the criterion —
-keep it compressed, not a narrated story.]
+keep it compressed, not a narrated story. Phrase it as "X happened, which
+is consistent with the criterion" — not "X shows/proves the criterion."
+The anecdote motivates; it does not establish.]
 [One clause each, if needed, for 1-2 more conditions a check has to meet
 — e.g. the agent's own report of having consulted a source doesn't itself
 count as having consulted it.]
