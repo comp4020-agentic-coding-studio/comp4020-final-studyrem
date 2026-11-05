@@ -223,6 +223,20 @@ it("has a Search link in the nav, and no per-field search link", async () => {
   expect(text).not.toMatch(/Search for this/);
 });
 
+// Bug: the shared stylesheet's `form { display: grid }` is an author rule,
+// which beats the UA's `[hidden] { display: none }` regardless of
+// specificity — so JS setting add-field-fallback.hidden = true (once the
+// dialog takes over) silently did nothing, leaving both the legacy inline
+// form and the dialog trigger visible at once. Fixed with an explicit
+// `[hidden] { display: none !important }` rule; this just locks the fix
+// in by asserting the rule ships.
+it("CSS makes [hidden] win over form's own display rule, so the dialog's fallback form actually hides", async () => {
+  const user = await signUp();
+  const res = await fetch(at("/me"), { headers: { Cookie: user.cookie } });
+  const text = await res.text();
+  expect(text).toMatch(/\[hidden\]\s*\{[^}]*display:\s*none\s*!important/);
+});
+
 it("never pushes another account's edits onto this account's own-view stream", async () => {
   const user = await signUp();
   const other = await signUp();

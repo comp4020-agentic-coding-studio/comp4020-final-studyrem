@@ -867,7 +867,25 @@ site-wide function reached from the nav, not an action tied to one
 specific field. `field_search` audit events, `searchFields`, and
 `/search`'s route handling are unchanged.
 
-## Open / not yet decided
+**38. Bug fix: the dialog's "legacy" fallback form on `/me` stayed visible
+alongside the trigger, because `[hidden]` lost to the stylesheet's own
+`form` rule.**
+Context: reported after decision 36/37 shipped — both the always-present
+`#add-field-fallback` form and the "+ Add a field" dialog trigger showed
+up together, even with JS enabled. Root cause: `STYLE`'s `form { display:
+grid; ... }` is an *author* rule; the browser's built-in `[hidden] {
+display: none }` is a *user-agent* rule, and author rules always beat
+user-agent rules for the same element regardless of selector specificity
+or source order. So `fallback.hidden = true` (set correctly by the
+decision-36 script) kept the `hidden` IDL attribute true, but the element
+never actually stopped rendering, because `form`'s `display: grid` from
+the page's own stylesheet overrode the UA's `display: none`.
+What changed, `src/page.ts`'s `STYLE`: added `[hidden] { display: none
+!important; }` right after the `form` rule, so any element marked hidden
+now actually hides regardless of what other display rules target it. This
+is a general CSS correctness fix, not specific to this one dialog — any
+future `hidden`-toggled element (not just forms) was exposed to the same
+bug.
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
   title's existence and holder-count without holding it themselves —

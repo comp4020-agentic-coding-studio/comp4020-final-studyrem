@@ -68,6 +68,10 @@ const STYLE = `
     gap: 0.9rem;
     margin: 1.5rem 0;
   }
+  /* An author "display" rule otherwise beats the UA [hidden] rule, so a
+     <form> hidden via JS (the add-field-fallback form once the dialog
+     takes over) would stay visible without this. */
+  [hidden] { display: none !important; }
   form.inline { display: inline; margin: 0; }
   label { display: grid; gap: 0.3rem; font-size: 0.9rem; color: var(--text-muted); }
   input, textarea {
