@@ -105,6 +105,68 @@ true, which no test can check by construction.
   thing anyway — relevant to the fabricated-provenance incident
   (manufacturing a plausible source, not just passively agreeing).
 
+**Why a second check is not automatically a second, independent layer —
+promoted to primary evidence (previously hedged via Artificial Hivemind,
+now with direct, unhedged evidence instead).** The earlier version of this
+claim leaned on Hivemind's generation-task convergence finding as an
+analogy to verification. Better evidence exists that measures
+verification/defense-layer correlation directly, requiring no analogy:
+- **Alotaibi, Jabbar, Al-Azani, Ahmed, "Layered LLM Defenses as an
+  Ensemble: Access Tiers, Inference Cost, and the Measured Failure
+  Correlation Between Defense Layers"** —
+  https://arxiv.org/abs/2608.28327 — verified directly against the
+  abstract. A seven-layer LLM defense stack: "failure correlation is
+  positive in all fifteen measurable pairs (ϕ from 0.30 to 0.75)," and
+  after controlling for task difficulty, "the dependence is predominantly
+  common-cause" and "architectural rather than sampling-based" — layers
+  "correlate through the model they all wrap." Directly on point: this
+  measures whether stacked *checks* fail together, not whether independent
+  *generations* happen to converge.
+- **Zanolini, "Correlated Failures of AI Approval Monitors"** —
+  https://arxiv.org/abs/2610.29178 — verified as a real 2026 paper (an
+  initial flag during verification, over unfamiliar model names in the
+  text, turned out to be a knowledge-cutoff false alarm, confirmed real via
+  independent search). Twelve monitor models reviewing payment approvals;
+  one attack optimized against a single model family fooled 10 of 12
+  simultaneously. The fix that worked: counting independent evidence
+  *sources*, not counting *votes* — a source-counting rule blocked only
+  0.9% of correct payments vs. 7.4% for the best vote-counting rule at
+  equal safety.
+- **The reframe this licenses**: whether two checks count as independent
+  "layers" is an empirical question — do they fail on the same inputs? —
+  not a bookkeeping one — did you invoke a different model? If a second
+  agent shares the root cause that produced the first agent's error, asking
+  it isn't adding a layer, it's the same layer wearing a second name tag.
+  This generalizes a 40-year-old engineering result: Knight & Leveson
+  (1986, *IEEE Transactions on Software Engineering*) found
+  independently-written program versions failed on the same inputs far
+  more than chance predicted — the independence assumption behind
+  redundant/N-version systems failing statistically (confirmed via
+  Wikipedia's summary; the original PDF could not be extracted as readable
+  text for a direct quote). A 2024-era reproduction using AI coding agents
+  — Ron, Baudry, Monperrus, "N-Version Programming with Coding Agents" —
+  https://arxiv.org/abs/2606.20158 — verified directly: 48 agent-generated
+  implementations of the Knight-Leveson spec, tested against 1,000,000
+  randomized inputs, showed "substantial common-mode failure, along the
+  findings of Knight-Leveson." Honest caveat: redundancy still helped in
+  practice — three-version majority-vote units dropped mean failure count
+  from 387.44 (single versions) to 130.99 (triples), with 11,844 units
+  showing zero failures — so the claim is "correlated failure is real and
+  large, reducing but not eliminating the value of redundancy," not
+  "redundancy is worthless."
+- **Correction, caught during verification**: an earlier pass attributed
+  this AI-reproduction result to "Builder, Defender, Breaker: Measurable
+  Independence and Bounded Autonomy..." (arXiv:2607.03215, Ghanem).
+  Checked directly — that paper does not reference Knight & Leveson at
+  all; it builds on a different foundational source, Eckhardt & Lee's
+  coincident-failure model. Still worth keeping as a separate citation on
+  its own terms: it introduces a "shared generative substrate" (training
+  data, model family, alignment, vendor, toolchain) and argues
+  "organisational independence...no longer implies statistical
+  independence once roles share a substrate" — directly relevant to a
+  builder/verifier pair drawn from the same model family, just don't cite
+  it as an extension of Knight-Leveson.
+
 **Two more compact, reinforcing findings** (not full sections — just worth
 having on hand):
 - *Overconfidence is systematic, not occasional*: **"LLMs are Overconfident:
@@ -215,7 +277,22 @@ Artificial Hivemind was added to close.
 
 ---
 
-## A2. Why independent agents converge on the same wrong answer
+## A2. Additional reading — why independent agents converge on shared
+## GENERATION, specifically (demoted from primary evidence)
+
+**Demoted after further verification**: this section's Hivemind citation
+was originally used to support the general claim "a second agent is not a
+second witness" (verification tasks). That general claim now has direct,
+unhedged evidence of its own — see the new subsection in section A below,
+"Why a second check is not automatically a second, independent layer" —
+built on correlated-failure literature that measures verification/defense
+tasks directly, not generation tasks by analogy. Hivemind stays here,
+correctly scoped: it's still the right citation for the Sloan/Balkan
+citation-genre-matching case specifically, because that case genuinely was
+two agents independently *generating* similar README prose, which is
+exactly what Hivemind measures. Keep this section as background/additional
+reading for that narrower claim, not as support for the broader
+second-opinion argument.
 
 New thread, prompted by re-reading the Sloan/Balkan incident itself: two
 *unrelated* agents (this project and a classmate's riff8, no shared context)
@@ -289,13 +366,17 @@ identical mistake looks like something structural).
   measured and real, which is the narrower, defensible version of the
   claim.
 
-This section pairs naturally with A: A explains why you can't trust one
-agent's account of its own reasoning; A2 explains why comparing against a
-*second* agent doesn't automatically fix that either, if the two agents were
-always likely to converge on the same plausible-sounding, unverified answer
-for structural reasons. The riff8 comparison in PROCESS.md only worked
-because it was an independent *human* noticing the shared pattern across two
-transcripts — not because having two agents was itself a safeguard.
+This section explains the Sloan/Balkan case specifically: two agents
+independently generating similar prose, which Hivemind measures directly.
+For the broader claim this list previously hung on Hivemind — that
+consulting a second agent as a *check* doesn't give independence either —
+see section A's new subsection, which has direct verification-task
+evidence instead of a generation-task analogy. The riff8 comparison in
+PROCESS.md worked because it was an independent *human* noticing the
+shared pattern across two transcripts — not because having two agents was
+itself a safeguard, which both this section (generation) and section A's
+new subsection (verification) now separately support with their own
+directly-applicable evidence.
 
 ---
 
@@ -529,79 +610,18 @@ distinction.** Checked against the field's own established vocabulary
   representational rules — and even at their best, this only solves a
   different axis of the problem than this note's claim.
 
-**Added — a necessary complication to the positive criterion in section A:
-"outside the chain" / "beyond agents' control" is necessary but not
+**Added — a necessary complication, full citations moved to section A.**
+"Outside the chain" / "beyond agents' control" is necessary but not
 sufficient if multiple independently-sourced checks still share a hidden
-common cause.** This is a real, verified, 40-year-old engineering concern,
-not a rephrasing of the existing criterion — it asks a different question:
-even granting two checks are each individually outside the chain, do they
-actually fail on different inputs, or do they share a root cause that
-defeats both at once?
+common cause. The full citation cluster (Knight & Leveson 1986; the 2024
+AI reproduction; Alotaibi et al.'s layered-defense correlation study;
+Zanolini's approval-monitor study) now lives in **section A**, under "Why a
+second check is not automatically a second, independent layer" — that's
+also where it belongs structurally, since it's now the primary,
+unhedged evidence for the "a second agent isn't a second witness" claim,
+not just a counter-case footnote. One correction specific to this
+section's own territory, kept here:
 
-- **Knight & Leveson, "An Experimental Evaluation of the Assumption of
-  Independence in Multiversion Programming"** (*IEEE Transactions on
-  Software Engineering*, 1986) — the foundational result. N-version
-  programming assumes independently-written implementations of the same
-  spec will fail on different inputs, so majority voting catches errors.
-  27 independently-written programs were tested against a large input
-  set; failures correlated far more than the independence assumption
-  predicted — confirmed via Wikipedia's summary (the primary PDF itself
-  could not be extracted as readable text; cite via a source that quotes
-  it directly if a tighter citation is needed): "the assumption of
-  independence of failures in N-version programs failed statistically."
-- **Ron, Baudry, Monperrus, "N-Version Programming with Coding Agents"**
-  — https://arxiv.org/abs/2606.20158 — verified directly: the actual 2024-
-  era reproduction of Knight & Leveson using AI coding agents (NOT
-  "Builder, Defender, Breaker," which was checked and found to build on
-  different foundational work — see correction below). 48 agent-generated
-  implementations of the Knight-Leveson Launch Interceptor spec, tested
-  against 1,000,000 randomized inputs. Confirmed finding: "substantial
-  common-mode failure, along the findings of Knight-Leveson," much of it
-  traceable to where the specification itself was ambiguous. Diversity
-  still helped in practice — three-version majority-vote units dropped
-  mean failure count from 387.44 (single versions) to 130.99 (triples),
-  with 11,844 units showing zero failures — so the honest reading is
-  "correlated failure is real and large, but diversity still buys a
-  partial, measurable gain," not "redundancy is worthless."
-- **Correction, caught during verification**: an earlier pass attributed
-  the Knight-Leveson AI-reproduction connection to "Builder, Defender,
-  Breaker: Measurable Independence and Bounded Autonomy..." (arXiv:2607.03215,
-  Ghanem). Checked directly — that paper does NOT reference Knight & Leveson
-  at all; it builds on a different foundational source, Eckhardt & Lee's
-  coincident-failure model. Still relevant and worth keeping as a separate
-  citation: it introduces the idea of a "shared generative substrate"
-  (training data, model family, alignment, vendor, toolchain) and argues
-  "organisational independence...no longer implies statistical independence
-  once roles share a substrate" — directly applicable to a builder/
-  verifier pair drawn from the same model family, but cite it on its own
-  terms, not as an extension of Knight-Leveson.
-- **Alotaibi, Jabbar, Al-Azani, Ahmed, "Layered LLM Defenses as an
-  Ensemble: Access Tiers, Inference Cost, and the Measured Failure
-  Correlation Between Defense Layers"** —
-  https://arxiv.org/abs/2608.28327 — verified directly against the
-  abstract (confirmed exact wording, not a paraphrase): a seven-layer LLM
-  defense stack showed "failure correlation is positive in all fifteen
-  measurable pairs (ϕ from 0.30 to 0.75)," and after controlling for
-  task difficulty, "the dependence is predominantly common-cause" and
-  "architectural rather than sampling-based" — "members correlate through
-  the model they all wrap." This is the direct, quantified version of the
-  idea: stacking defenses built from the same underlying model family
-  doesn't buy the independence a naive "more layers" intuition assumes.
-- **Zanolini, "Correlated Failures of AI Approval Monitors"** —
-  https://arxiv.org/abs/2610.29178 — verified as a real, legitimate 2026
-  paper (initially flagged as suspicious during verification because it
-  references model names unfamiliar from training data — e.g. "Claude
-  Opus 5.5," "GPT-6 Astra" — which turned out to be a false alarm from
-  stale knowledge, not a sign of fabrication; confirmed real via an
-  independent search hit, GitHub discussion, and a second research-index
-  listing). Twelve monitor models reviewing payment approvals: one attack,
-  optimized against a single model family, fooled 10 of 12 monitors
-  simultaneously. The fix that actually worked was counting *independent
-  evidence sources*, not counting *votes* — a rule based on source
-  diversity blocked only 0.9% of correct payments vs. 7.4% for the best
-  vote-counting rule at equal safety. Directly supports the point that
-  "how many checks" matters less than "how many genuinely independent
-  sources of evidence those checks are drawing on."
 - **Correction, caught during verification**: a Medium/blog-tier source
   had attributed a "common-mode failure" critique directly to Reason's
   Swiss Cheese Model and cited Fukushima as its textbook example. Checked
