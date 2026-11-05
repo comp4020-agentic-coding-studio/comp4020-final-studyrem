@@ -201,6 +201,28 @@ it("pushes a live update to one open tab when another tab edits a field", async 
   }
 });
 
+// Decision 36: the "Add a field" popup lives on /me, not /search — a
+// native <dialog> plus the always-present form as its no-JS fallback.
+it("offers 'Add a field' as a dialog on /me, with the plain form as a no-JS fallback", async () => {
+  const user = await signUp();
+  const res = await fetch(at("/me"), { headers: { Cookie: user.cookie } });
+  const text = await res.text();
+  expect(text).toMatch(/id="add-field-fallback"/);
+  expect(text).toMatch(/<dialog id="add-field-dialog">/);
+  expect(text).toMatch(/id="add-field-trigger"/);
+});
+
+// Decision 37: finding people is a site-wide function reached from the
+// nav now, not a per-field "Search for this" link.
+it("has a Search link in the nav, and no per-field search link", async () => {
+  const user = await signUp();
+  await addField(user, fieldTitle(), "something");
+  const res = await fetch(at("/me"), { headers: { Cookie: user.cookie } });
+  const text = await res.text();
+  expect(text).toMatch(/<a href="\/search">Search<\/a>/);
+  expect(text).not.toMatch(/Search for this/);
+});
+
 it("never pushes another account's edits onto this account's own-view stream", async () => {
   const user = await signUp();
   const other = await signUp();

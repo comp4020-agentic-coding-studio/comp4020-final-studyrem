@@ -238,18 +238,6 @@ const STYLE = `
   }
   dialog#add-field-dialog::backdrop { background: rgba(42, 36, 32, 0.4); }
   dialog#add-field-dialog h2 { margin-top: 0; }
-  ul.dialog-options { list-style: none; padding: 0; margin: 1rem 0; }
-  ul.dialog-options li { border: none; padding: 0; }
-  ul.dialog-options button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: 1px solid var(--border-subtle);
-    color: var(--text);
-    margin-bottom: 0.5rem;
-  }
-  ul.dialog-options button:hover { background: var(--bg); border-color: var(--border); }
   #add-field-cancel {
     background: none;
     border: 1px solid var(--border-subtle);
@@ -307,6 +295,7 @@ function siteNav(username: string): string {
 <a class="brand" href="/me">Commonplace</a>
 <div class="links">
 <a href="/me">Your profile</a>
+<a href="/search">Search</a>
 <a href="/readme/">What good means for this app</a>
 <form class="inline" method="post" action="/logout">Logged in as <strong>${escapeHtml(username)}</strong> <button type="submit">Log out</button></form>
 </div>
@@ -377,7 +366,6 @@ export function renderOwner(
       fieldItem(
         f,
         `<div class="field-actions">
-<a href="/search?field=${encodeURIComponent(f.title)}#q-0">Search for this</a>
 <form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
 </div>
 <details class="edit-field">
@@ -399,39 +387,70 @@ export function renderOwner(
     `${siteNav(username)}
 <h1>Your profile</h1>
 ${messageBlock}
-<form method="post" action="/me/fields">
+<form method="post" action="/me/fields" id="add-field-fallback">
   <label>Field title <input name="title" required maxlength="80" list="title-suggestions" autocomplete="off" /></label>
   <datalist id="title-suggestions"></datalist>
   <label>What you want to say <textarea name="content" required maxlength="2000" rows="4"></textarea></label>
   <button type="submit">Add field</button>
 </form>
+<button type="button" id="add-field-trigger" hidden>+ Add a field</button>
+<dialog id="add-field-dialog">
+  <h2>Add a field</h2>
+  <form method="post" action="/me/fields">
+    <label>Field title <input name="title" required maxlength="80" list="title-suggestions" autocomplete="off" /></label>
+    <label>What you want to say <textarea name="content" required maxlength="2000" rows="4"></textarea></label>
+    <button type="submit">Add field</button>
+  </form>
+  <button type="button" id="add-field-cancel">Cancel</button>
+</dialog>
 <p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>No fields yet &mdash; add the first one.</p>
 <ul id="fields">
 ${items}
 </ul>
 <script>
 (() => {
-  const input = document.querySelector('input[name="title"]');
+  // Both the always-present form and the dialog's copy share the same
+  // #title-suggestions datalist, so either input's typing keeps it current.
+  const titleInputs = document.querySelectorAll('input[name="title"]');
   const datalist = document.getElementById("title-suggestions");
   let timer;
-  input.addEventListener("input", () => {
-    clearTimeout(timer);
-    const q = input.value.trim();
-    if (q === "") {
-      datalist.replaceChildren();
-      return;
-    }
-    timer = setTimeout(async () => {
-      const res = await fetch("/fields/suggest?q=" + encodeURIComponent(q));
-      if (!res.ok) return;
-      const suggestions = await res.json();
-      datalist.replaceChildren(...suggestions.map((s) => {
-        const option = document.createElement("option");
-        option.value = s.title;
-        return option;
-      }));
-    }, 250);
+  titleInputs.forEach((input) => {
+    input.setAttribute("list", "title-suggestions");
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if (q === "") {
+        datalist.replaceChildren();
+        return;
+      }
+      timer = setTimeout(async () => {
+        const res = await fetch("/fields/suggest?q=" + encodeURIComponent(q));
+        if (!res.ok) return;
+        const suggestions = await res.json();
+        datalist.replaceChildren(...suggestions.map((s) => {
+          const option = document.createElement("option");
+          option.value = s.title;
+          return option;
+        }));
+      }, 250);
+    });
   });
+
+  // Decision 36 (moved here from /search): a native <dialog> needs JS to
+  // open at all, so the always-present form above is the no-JS path. With
+  // JS on, hide it and show a "+ Add a field" trigger that opens the dialog
+  // instead — same POST /me/fields either way, just two copies of the form.
+  (() => {
+    const fallback = document.getElementById("add-field-fallback");
+    const trigger = document.getElementById("add-field-trigger");
+    const dialog = document.getElementById("add-field-dialog");
+    const cancel = document.getElementById("add-field-cancel");
+    if (!fallback || !trigger || !dialog || !cancel) return;
+    fallback.hidden = true;
+    trigger.hidden = false;
+    trigger.addEventListener("click", () => dialog.showModal());
+    cancel.addEventListener("click", () => dialog.close());
+  })();
 
   // Keeps this tab's own field list current when another tab (or another
   // device logged into the same account) adds or removes a field.
@@ -457,12 +476,9 @@ ${items}
       deleteButton.type = "submit";
       deleteButton.textContent = "Remove";
       deleteForm.append(deleteButton);
-      const searchLink = document.createElement("a");
-      searchLink.href = "/search?field=" + encodeURIComponent(f.title) + "#q-0";
-      searchLink.textContent = "Search for this";
       const actions = document.createElement("div");
       actions.className = "field-actions";
-      actions.append(searchLink, deleteForm);
+      actions.append(deleteForm);
       // A live-pushed field (another tab's edit/add/remove) keeps whatever
       // open/closed state its own <details> already had, since this whole
       // <li> is only rebuilt from scratch when its id wasn't already on the
@@ -630,35 +646,16 @@ export function renderSearch(
     )
     .join("\n");
 
-  // Decision 36: the no-JS path is this always-present inline row — a
-  // native <dialog> needs .showModal() from JS to open as a modal at all,
-  // so there's no way to make the dialog itself the only markup and still
-  // work with JS off. With JS available, the script below hides this row
-  // and replaces it with a "+ Add a field" button that opens the dialog
-  // declared right after it; both submit the exact same request.
   const addRow =
     availableTitles.length > 0
-      ? `<div class="add-field" id="add-field-fallback">
+      ? `<div class="add-field">
   <label>Add a field to search
     <select name="add_field">
 ${availableTitles.map((t) => `      <option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("\n")}
     </select>
   </label>
   <button type="submit" formaction="/search?add=1" formnovalidate>Add</button>
-</div>
-<button type="button" id="add-field-trigger" hidden>+ Add a field</button>
-<dialog id="add-field-dialog">
-  <h2>Add a field to search</h2>
-  <ul class="dialog-options">
-${availableTitles
-  .map(
-    (t) =>
-      `    <li><button type="submit" formaction="/search?add=1&add_field=${encodeURIComponent(t)}" formnovalidate>${escapeHtml(t)}</button></li>`,
-  )
-  .join("\n")}
-  </ul>
-  <button type="button" id="add-field-cancel">Cancel</button>
-</dialog>`
+</div>`
       : "";
 
   const optionsBlock =
@@ -709,12 +706,6 @@ ${form}
 ${resultsBlock}
 <script>
 (() => {
-  // Progressive enhancement over the plain #q-N anchor (which already
-  // scrolls there with no JS): also moves keyboard/screen-reader focus
-  // onto the row "Search for this" was clicked from.
-  const target = location.hash && document.querySelector(location.hash);
-  if (target instanceof HTMLInputElement) target.focus();
-
   // Decision 34: Add/Remove already work as plain form submits (each
   // button's formaction reloads the page with the row added/removed) — this
   // only intercepts the click to do the same thing without a reload, when
@@ -732,7 +723,6 @@ ${resultsBlock}
     if (!nextForm || !nextResults || !currentForm) return false;
     document.getElementById("search-results")?.replaceWith(nextResults);
     currentForm.replaceWith(nextForm);
-    document.body.dispatchEvent(new Event("search:swapped"));
     return true;
   }
 
@@ -747,27 +737,6 @@ ${resultsBlock}
     const ok = await swapIn("/search?" + params.toString());
     if (!ok) button.closest("form").submit();
   });
-
-  // Decision 36: a native <dialog> needs JS to open at all, so the inline
-  // fallback row (#add-field-fallback) is what renders with JS off. With JS
-  // on, swap to the dialog instead — its "Add" buttons are inside the same
-  // form and already have formaction, so the click handler above already
-  // runs them through swapIn with no extra wiring; this only owns
-  // open/close. The dialog itself gets replaced wholesale on every
-  // swapIn (it's part of the form), so it's never left open afterwards.
-  function wireAddFieldDialog() {
-    const fallback = document.getElementById("add-field-fallback");
-    const trigger = document.getElementById("add-field-trigger");
-    const dialog = document.getElementById("add-field-dialog");
-    const cancel = document.getElementById("add-field-cancel");
-    if (!fallback || !trigger || !dialog || !cancel) return;
-    fallback.hidden = true;
-    trigger.hidden = false;
-    trigger.addEventListener("click", () => dialog.showModal());
-    cancel.addEventListener("click", () => dialog.close());
-  }
-  wireAddFieldDialog();
-  document.body.addEventListener("search:swapped", wireAddFieldDialog);
 })();
 </script>`,
   );

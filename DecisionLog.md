@@ -819,40 +819,53 @@ live: renaming "Hobby" to "Hobbies" immediately stopped a mutual viewer
 who still held "Hobby" from seeing it, and surfaced "Hobbies" as a
 decision-9 suggestion for them instead.
 
-**36. "Add a field" on `/search` is a native `<dialog>` popup when JS is
-available, with the inline dropdown+Add row (decision 34) as the no-JS
+**36. "Add a field" on `/me` (not `/search`) is a native `<dialog>` popup
+when JS is available, with the always-present form as the no-JS
 fallback.**
-Context: decision 34's always-visible inline row worked but read as
-visual clutter next to the field rows themselves, now that there can be
-several. Confirmed up front (AskUserQuestion) the mechanism: a real modal
-dialog, not another disclosure variant, specifically because `<dialog>`
-needs `.showModal()` from JS to open as a modal at all — there's no way
-to make the dialog the *only* markup and still have the feature work with
-JS off, so the inline row has to stay as a genuine fallback, not just a
-decoration.
-What changed, `src/page.ts`'s `renderSearch`: the inline row now has
-`id="add-field-fallback"`; immediately after it, a hidden `+ Add a field`
-button and a `<dialog id="add-field-dialog">` are rendered unconditionally
-whenever there's at least one title left to add — the dialog lists each
-available title as its own one-click submit button
-(`formaction="/search?add=1&add_field=<title>"`), plus Cancel. Both the
-fallback row's Add button and the dialog's per-title buttons live inside
-the same `<form>` as the search rows, so decision 34's existing click
-handler (which already intercepts any `button[formaction]` inside that
-form and replays the request through `swapIn()` with no reload) handles
-them with no new request-handling code — this decision is purely about
-which control is visible and how the dialog opens/closes.
-A small script hides the fallback and un-hides the trigger once JS has
-run, wires the trigger to `dialog.showModal()` and Cancel to
-`dialog.close()`, and re-runs that wiring after every `swapIn()` swap (the
-whole form,
-dialog included, is replaced wholesale on every Add/Remove, so a
-freshly-inserted dialog needs its listeners re-attached — done via a
-`search:swapped` event `swapIn()` now dispatches on `document.body`
-after a successful swap).
-Not changed: `src/server.ts`'s `/search` route, `searchFields`, decision
-33's matching, decision 34's Add/Remove semantics server-side. This is
-UI-only, same request shape either way.
+Context: the ask was "making the 'add field' a separate popup," meant for
+a user's own profile page where fields are created in the first place —
+first built against `/search`'s add-a-search-row control instead, which
+was the wrong target and has been reverted (see 37). `/search` keeps
+decision 34's plain dropdown-and-Add row; nothing about that page's
+interaction model changes here. Confirmed up front (AskUserQuestion) the
+mechanism: a real modal dialog, not another disclosure variant,
+specifically because `<dialog>` needs `.showModal()` from JS to open as a
+modal at all — there's no way to make the dialog the *only* markup and
+still have the feature work with JS off, so the plain form has to stay as
+a genuine fallback, not just a decoration.
+What changed, `src/page.ts`'s `renderOwner`: the existing "Add field" form
+now has `id="add-field-fallback"`; immediately after it, a hidden
+`+ Add a field` button and a `<dialog id="add-field-dialog">` containing a
+second copy of the exact same form (same `POST /me/fields`, same fields,
+same validation) are rendered unconditionally. A small script hides the
+fallback form and un-hides the trigger once JS has run, wires the trigger
+to `dialog.showModal()` and Cancel to `dialog.close()`. The title
+autocomplete script (decision 10) now wires every `input[name="title"]`
+on the page, not just one, since there are now two copies of that input
+sharing the one `#title-suggestions` datalist.
+Not changed: `src/server.ts`'s `POST /me/fields` route, which already
+handled this exact request shape — this is UI-only, same request either
+way.
+
+**37. Reverted `/search`'s add-field control to decision 34's plain
+inline dropdown-and-Add row; search itself moved off the per-field
+"Search for this" links and onto a `Search` link in the shared site nav.**
+Context: decision 36 (as first built) put the `<dialog>` popup on
+`/search` instead of `/me` — a misreading of "add field" as the
+search-row add control rather than a profile field. Corrected: `/search`
+keeps exactly the dropdown-and-Add/Remove interaction decision 34
+describes, with no dialog, since search is a separate function from
+profile editing and clicking into one field's "Search for this" link
+duplicated that function once `/search` could already search every field
+on its own.
+What changed: `renderSearch` drops the `<dialog>`/trigger markup and its
+wiring script entirely (back to exactly decision 34's shape); `siteNav`
+gained a `Search` link next to `Your profile`; `renderOwner`'s per-field
+"Search for this" link (and the matching link built client-side in the
+`/me/events` reconnect script) was removed, since finding people is now a
+site-wide function reached from the nav, not an action tied to one
+specific field. `field_search` audit events, `searchFields`, and
+`/search`'s route handling are unchanged.
 
 ## Open / not yet decided
 

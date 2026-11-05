@@ -241,6 +241,21 @@ it("decision 33: with partial matching off (default), only full matches across e
   expect(text).not.toMatch(/Matches some/);
 });
 
+// Decision 37: the "Add a field" dialog belongs on /me, not /search —
+// /search keeps decision 34's plain dropdown-and-Add row, with no dialog.
+it("decision 37: /search has no 'Add a field' dialog, just the plain dropdown", async () => {
+  const titleA = fieldTitle();
+  const titleB = fieldTitle();
+  const a = await signUp();
+  await addField(a, titleA, "x");
+  await addField(a, titleB, "y");
+
+  const res = await search(a, [titleA], [""]);
+  const text = await res.text();
+  expect(text).toMatch(/<select name="add_field">/);
+  expect(text).not.toMatch(/<dialog/);
+});
+
 it("decision 33: with partial matching on, a user matching only some fields appears under 'Matches some'", async () => {
   const titleA = fieldTitle();
   const titleB = fieldTitle();
