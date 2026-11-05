@@ -8,6 +8,7 @@ import { marked } from "marked";
 import { audit } from "./audit.ts";
 import {
   addField,
+  editField,
   bumpSessionVersion,
   createUser,
   DUMMY_PASSWORD_HASH,
@@ -158,6 +159,35 @@ const server = createServer((req, res) => {
           addField(user.id, title, content);
           notifyFieldsChanged(user.id);
           audit("field_added", { userId: user.id, username: user.username, title });
+          const truncated = title.length < rawTitle.length || content.length < rawContent.length;
+          return redirect(res, truncated ? "/me?notice=truncated" : "/me");
+        }
+
+        const edit = method === "POST" && path.match(/^\/me\/fields\/([^/]+)\/edit$/);
+        if (edit) {
+          const fieldId = decodeURIComponent(edit[1]);
+          const existing = loadFields(user.id).find((f) => f.id === fieldId);
+          if (!existing) return redirect(res, "/me");
+          const params = new URLSearchParams(await readBody(req));
+          const rawTitle = (params.get("title") ?? "").trim();
+          const rawContent = (params.get("content") ?? "").trim();
+          if (!rawTitle || !rawContent) {
+            return redirect(res, "/me?error=empty-field");
+          }
+          const title = rawTitle.slice(0, 80);
+          const content = rawContent.slice(0, 2000);
+          editField(user.id, fieldId, title, content);
+          notifyFieldsChanged(user.id);
+          // Decision 19/35: titles only, never content — same discipline as
+          // field_added/field_removed. Both old and new titles are logged
+          // since a rename is itself the thing worth being able to reconstruct
+          // (it changes who this field is mutually visible to).
+          audit("field_edited", {
+            userId: user.id,
+            username: user.username,
+            title: existing.title,
+            newTitle: title,
+          });
           const truncated = title.length < rawTitle.length || content.length < rawContent.length;
           return redirect(res, truncated ? "/me?notice=truncated" : "/me");
         }

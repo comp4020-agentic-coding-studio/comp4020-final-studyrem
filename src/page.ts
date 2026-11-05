@@ -117,6 +117,18 @@ const STYLE = `
   details.signup summary::-webkit-details-marker { display: none; }
   details.signup summary:hover { color: var(--accent-hover); }
   details.signup[open] summary { margin-bottom: 1.25rem; }
+  details.edit-field {
+    margin-top: 0.6rem;
+  }
+  details.edit-field summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    list-style: none;
+  }
+  details.edit-field summary::-webkit-details-marker { display: none; }
+  details.edit-field summary:hover { color: var(--accent); }
+  details.edit-field form { margin: 0.75rem 0 0; }
   ul { list-style: none; padding: 0; margin: 1.5rem 0; }
   li { border-top: 1px solid var(--border-subtle); padding: 1.25rem 0; }
   li:first-child { border-top: 0; }
@@ -202,6 +214,46 @@ const STYLE = `
     border: 1px solid var(--border);
     border-radius: 0.35rem;
     width: 100%;
+  }
+  #add-field-trigger {
+    margin: 1.25rem 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  #add-field-trigger:hover { color: var(--accent-hover); }
+  dialog#add-field-dialog {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    background: var(--surface);
+    color: var(--text);
+    max-width: 24rem;
+    width: calc(100% - 2.5rem);
+  }
+  dialog#add-field-dialog::backdrop { background: rgba(42, 36, 32, 0.4); }
+  dialog#add-field-dialog h2 { margin-top: 0; }
+  ul.dialog-options { list-style: none; padding: 0; margin: 1rem 0; }
+  ul.dialog-options li { border: none; padding: 0; }
+  ul.dialog-options button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 1px solid var(--border-subtle);
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  ul.dialog-options button:hover { background: var(--bg); border-color: var(--border); }
+  #add-field-cancel {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
   }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
   header h1 { margin-bottom: 0; }
@@ -327,7 +379,15 @@ export function renderOwner(
         `<div class="field-actions">
 <a href="/search?field=${encodeURIComponent(f.title)}#q-0">Search for this</a>
 <form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
-</div>`,
+</div>
+<details class="edit-field">
+  <summary>Edit</summary>
+  <form method="post" action="/me/fields/${encodeURIComponent(f.id)}/edit">
+    <label>Field title <input name="title" value="${escapeHtml(f.title)}" required maxlength="80" list="title-suggestions" autocomplete="off" /></label>
+    <label>What you want to say <textarea name="content" required maxlength="2000" rows="4">${escapeHtml(f.content)}</textarea></label>
+    <button type="submit">Save</button>
+  </form>
+</details>`,
       ),
     )
     .join("\n");
@@ -403,7 +463,42 @@ ${items}
       const actions = document.createElement("div");
       actions.className = "field-actions";
       actions.append(searchLink, deleteForm);
-      li.append(h, p, actions);
+      // A live-pushed field (another tab's edit/add/remove) keeps whatever
+      // open/closed state its own <details> already had, since this whole
+      // <li> is only rebuilt from scratch when its id wasn't already on the
+      // page — see newlyArrived/seenIds below.
+      const editDetails = document.createElement("details");
+      editDetails.className = "edit-field";
+      const editSummary = document.createElement("summary");
+      editSummary.textContent = "Edit";
+      const editForm = document.createElement("form");
+      editForm.method = "post";
+      editForm.action = "/me/fields/" + encodeURIComponent(f.id) + "/edit";
+      const titleLabel = document.createElement("label");
+      titleLabel.textContent = "Field title ";
+      const titleInput = document.createElement("input");
+      titleInput.name = "title";
+      titleInput.value = f.title;
+      titleInput.required = true;
+      titleInput.maxLength = 80;
+      titleInput.setAttribute("list", "title-suggestions");
+      titleInput.autocomplete = "off";
+      titleLabel.append(titleInput);
+      const contentLabel = document.createElement("label");
+      contentLabel.textContent = "What you want to say ";
+      const contentInput = document.createElement("textarea");
+      contentInput.name = "content";
+      contentInput.value = f.content;
+      contentInput.required = true;
+      contentInput.maxLength = 2000;
+      contentInput.rows = 4;
+      contentLabel.append(contentInput);
+      const saveButton = document.createElement("button");
+      saveButton.type = "submit";
+      saveButton.textContent = "Save";
+      editForm.append(titleLabel, contentLabel, saveButton);
+      editDetails.append(editSummary, editForm);
+      li.append(h, p, actions, editDetails);
       if (!seenIds.has(f.id)) {
         li.classList.add("field-enter");
         newlyArrived.push(li);
@@ -523,15 +618,6 @@ export function renderSearch(
   criteriaCount: number,
   results: SearchResult[],
 ): string {
-  // Every already-added row is carried forward as a hidden "field" param so
-  // the Add/Remove GETs (plain links/forms, no JS required) don't lose the
-  // rest of the search when one row changes.
-  const carryHidden = (exceptIndex?: number): string =>
-    rows
-      .filter((_, i) => i !== exceptIndex)
-      .map((r) => `<input type="hidden" name="field" value="${escapeHtml(r.title)}" />`)
-      .join("\n");
-
   const fieldRows = rows
     .map(
       (r, i) => `<div class="search-row" id="row-${i}">
@@ -544,16 +630,35 @@ export function renderSearch(
     )
     .join("\n");
 
+  // Decision 36: the no-JS path is this always-present inline row — a
+  // native <dialog> needs .showModal() from JS to open as a modal at all,
+  // so there's no way to make the dialog itself the only markup and still
+  // work with JS off. With JS available, the script below hides this row
+  // and replaces it with a "+ Add a field" button that opens the dialog
+  // declared right after it; both submit the exact same request.
   const addRow =
     availableTitles.length > 0
-      ? `<div class="add-field">
+      ? `<div class="add-field" id="add-field-fallback">
   <label>Add a field to search
     <select name="add_field">
 ${availableTitles.map((t) => `      <option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("\n")}
     </select>
   </label>
   <button type="submit" formaction="/search?add=1" formnovalidate>Add</button>
-</div>`
+</div>
+<button type="button" id="add-field-trigger" hidden>+ Add a field</button>
+<dialog id="add-field-dialog">
+  <h2>Add a field to search</h2>
+  <ul class="dialog-options">
+${availableTitles
+  .map(
+    (t) =>
+      `    <li><button type="submit" formaction="/search?add=1&add_field=${encodeURIComponent(t)}" formnovalidate>${escapeHtml(t)}</button></li>`,
+  )
+  .join("\n")}
+  </ul>
+  <button type="button" id="add-field-cancel">Cancel</button>
+</dialog>`
       : "";
 
   const optionsBlock =
@@ -627,6 +732,7 @@ ${resultsBlock}
     if (!nextForm || !nextResults || !currentForm) return false;
     document.getElementById("search-results")?.replaceWith(nextResults);
     currentForm.replaceWith(nextForm);
+    document.body.dispatchEvent(new Event("search:swapped"));
     return true;
   }
 
@@ -641,6 +747,27 @@ ${resultsBlock}
     const ok = await swapIn("/search?" + params.toString());
     if (!ok) button.closest("form").submit();
   });
+
+  // Decision 36: a native <dialog> needs JS to open at all, so the inline
+  // fallback row (#add-field-fallback) is what renders with JS off. With JS
+  // on, swap to the dialog instead — its "Add" buttons are inside the same
+  // form and already have formaction, so the click handler above already
+  // runs them through swapIn with no extra wiring; this only owns
+  // open/close. The dialog itself gets replaced wholesale on every
+  // swapIn (it's part of the form), so it's never left open afterwards.
+  function wireAddFieldDialog() {
+    const fallback = document.getElementById("add-field-fallback");
+    const trigger = document.getElementById("add-field-trigger");
+    const dialog = document.getElementById("add-field-dialog");
+    const cancel = document.getElementById("add-field-cancel");
+    if (!fallback || !trigger || !dialog || !cancel) return;
+    fallback.hidden = true;
+    trigger.hidden = false;
+    trigger.addEventListener("click", () => dialog.showModal());
+    cancel.addEventListener("click", () => dialog.close());
+  }
+  wireAddFieldDialog();
+  document.body.addEventListener("search:swapped", wireAddFieldDialog);
 })();
 </script>`,
   );

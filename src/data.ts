@@ -173,6 +173,22 @@ export function removeField(userId: string, fieldId: string): Field[] {
   return loadFields(userId);
 }
 
+// Decision 35: edits a field in place rather than delete-then-re-add —
+// createdAt is untouched, so an edited field keeps its position in the
+// list. Changing the title changes what's mutually visible to others
+// (decision 3's title-equality rule) the moment it's saved; that's a
+// consequence of exposing title-editing, not a separate access check this
+// function needs to make.
+export function editField(userId: string, fieldId: string, title: string, content: string): Field[] {
+  db.prepare("UPDATE fields SET title = ?, content = ? WHERE id = ? AND user_id = ?").run(
+    title,
+    content,
+    fieldId,
+    userId,
+  );
+  return loadFields(userId);
+}
+
 // Decision 3, enforced directly: the fields a viewer may see on someone
 // else's profile are exactly the ones whose title the viewer also holds.
 export function mutualFields(ownerId: string, viewerId: string): Field[] {

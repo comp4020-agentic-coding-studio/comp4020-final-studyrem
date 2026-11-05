@@ -788,6 +788,72 @@ one per added row) request shape, replacing decision 33's positional
 not-yet-added titles, and an untrusted `field` param being silently
 dropped.
 
+**35. A field on your own profile can be edited in place (title and/or
+content), not just removed and re-added.**
+Context: `/me`'s fields only ever had Search/Remove — changing a typo or
+updating what you'd written meant deleting the field and losing its place
+in the list, then re-adding it. Confirmed what "editable" meant up front
+(AskUserQuestion) — this is about a user's own profile fields, not
+anything on `/search`.
+What changed: `src/data.ts` gained `editField(userId, fieldId, title,
+content)` — an `UPDATE`, not delete-then-insert, so `created_at` (and so
+the field's position in the list) is untouched by an edit.
+`POST /me/fields/<id>/edit` in `src/server.ts` validates and truncates
+exactly like `POST /me/fields` (the add route), calls
+`notifyFieldsChanged` so any open mutual view or other `/me` tab updates
+live, and logs `field_edited` with both the old and new title (never
+content, matching decision 19's "never log field content" — a rename is
+itself worth being able to reconstruct, since it changes who the field is
+mutually visible to).
+UI: each field in `/me`'s list gets an "Edit" `<details>` disclosure
+(same zero-JS pattern as decision 30's signup disclosure) that reveals a
+pre-filled title/content form in place; `renderOwner`'s server-rendered
+markup and the `/me/events` SSE reconnect script that rebuilds the list
+client-side were both updated so a page load and a live update produce
+the same Edit control.
+Privacy note, not a new leak: renaming a field's title changes what's
+mutually visible the moment it's saved (decision 3's title-equality
+rule) — someone who held the old title stops seeing it, exactly as if
+you'd removed the old field and added a differently-titled one. Verified
+live: renaming "Hobby" to "Hobbies" immediately stopped a mutual viewer
+who still held "Hobby" from seeing it, and surfaced "Hobbies" as a
+decision-9 suggestion for them instead.
+
+**36. "Add a field" on `/search` is a native `<dialog>` popup when JS is
+available, with the inline dropdown+Add row (decision 34) as the no-JS
+fallback.**
+Context: decision 34's always-visible inline row worked but read as
+visual clutter next to the field rows themselves, now that there can be
+several. Confirmed up front (AskUserQuestion) the mechanism: a real modal
+dialog, not another disclosure variant, specifically because `<dialog>`
+needs `.showModal()` from JS to open as a modal at all — there's no way
+to make the dialog the *only* markup and still have the feature work with
+JS off, so the inline row has to stay as a genuine fallback, not just a
+decoration.
+What changed, `src/page.ts`'s `renderSearch`: the inline row now has
+`id="add-field-fallback"`; immediately after it, a hidden `+ Add a field`
+button and a `<dialog id="add-field-dialog">` are rendered unconditionally
+whenever there's at least one title left to add — the dialog lists each
+available title as its own one-click submit button
+(`formaction="/search?add=1&add_field=<title>"`), plus Cancel. Both the
+fallback row's Add button and the dialog's per-title buttons live inside
+the same `<form>` as the search rows, so decision 34's existing click
+handler (which already intercepts any `button[formaction]` inside that
+form and replays the request through `swapIn()` with no reload) handles
+them with no new request-handling code — this decision is purely about
+which control is visible and how the dialog opens/closes.
+A small script hides the fallback and un-hides the trigger once JS has
+run, wires the trigger to `dialog.showModal()` and Cancel to
+`dialog.close()`, and re-runs that wiring after every `swapIn()` swap (the
+whole form,
+dialog included, is replaced wholesale on every Add/Remove, so a
+freshly-inserted dialog needs its listeners re-attached — done via a
+`search:swapped` event `swapIn()` now dispatches on `document.body`
+after a successful swap).
+Not changed: `src/server.ts`'s `/search` route, `searchFields`, decision
+33's matching, decision 34's Add/Remove semantics server-side. This is
+UI-only, same request shape either way.
+
 ## Open / not yet decided
 
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a

@@ -139,6 +139,68 @@ it("pushes a live update to one open tab when another tab removes a field", asyn
   }
 });
 
+// Decision 35: editField updates a field in place (same id, same position)
+// rather than delete-then-reinsert.
+it("edits a field's title and content in place, keeping its position in the list", async () => {
+  const user = await signUp();
+  const firstTitle = fieldTitle();
+  const secondTitle = fieldTitle();
+  await addField(user, firstTitle, "first, unchanged");
+  await addField(user, secondTitle, "second, about to be edited");
+
+  const mePage = await (await fetch(at("/me"), { headers: { Cookie: user.cookie } })).text();
+  const fieldId = mePage.match(new RegExp(`data-field-id="([^"]+)"><h2>${secondTitle}</h2>`))?.[1];
+  expect(fieldId).toBeTruthy();
+
+  const newTitle = fieldTitle();
+  const editRes = await post(`/me/fields/${fieldId}/edit`, user.cookie, { title: newTitle, content: "edited content" });
+  expect(editRes.status).toBe(303);
+
+  const after = await (await fetch(at("/me"), { headers: { Cookie: user.cookie } })).text();
+  expect(after).toMatch(new RegExp(`data-field-id="${fieldId}"[^]*?${newTitle}[^]*?edited content`));
+  expect(after).not.toMatch(secondTitle);
+  // Position preserved: the edited field (originally second) still comes
+  // after the untouched first one, since editField never touches created_at.
+  expect(after.indexOf(firstTitle)).toBeLessThan(after.indexOf(newTitle));
+});
+
+it("rejects an edit with an empty title or content", async () => {
+  const user = await signUp();
+  const title = fieldTitle();
+  await addField(user, title, "has content");
+  const mePage = await (await fetch(at("/me"), { headers: { Cookie: user.cookie } })).text();
+  const fieldId = mePage.match(/\/me\/fields\/([^"]+)\/delete/)?.[1];
+  expect(fieldId).toBeTruthy();
+
+  const res = await post(`/me/fields/${fieldId}/edit`, user.cookie, { title: "", content: "x" });
+  expect(res.status).toBe(303);
+  expect(res.headers.get("location")).toMatch(/error=empty-field/);
+});
+
+it("pushes a live update to one open tab when another tab edits a field", async () => {
+  const user = await signUp();
+  const title = fieldTitle();
+  await addField(user, title, "before the edit");
+  const mePage = await (await fetch(at("/me"), { headers: { Cookie: user.cookie } })).text();
+  const fieldId = mePage.match(/\/me\/fields\/([^"]+)\/delete/)?.[1];
+  expect(fieldId).toBeTruthy();
+
+  const stream = await openStream(user);
+  try {
+    expect(titles((await stream.next(1000)).data)).toEqual([title]);
+
+    const newTitle = fieldTitle();
+    const editRes = await post(`/me/fields/${fieldId}/edit`, user.cookie, { title: newTitle, content: "after the edit" });
+    expect(editRes.status).toBe(303);
+
+    const update = await stream.next(1000);
+    expect(update.event).toBe("fields");
+    expect(titles(update.data)).toEqual([newTitle]);
+  } finally {
+    stream.close();
+  }
+});
+
 it("never pushes another account's edits onto this account's own-view stream", async () => {
   const user = await signUp();
   const other = await signUp();
