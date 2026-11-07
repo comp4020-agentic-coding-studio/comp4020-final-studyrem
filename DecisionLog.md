@@ -898,10 +898,14 @@ of beside it; and "Add a field" sat at the top of `/me`, ahead of the
 field list itself, which buries the list you actually came to read behind
 a creation form every time.
 What changed, `src/page.ts`'s `STYLE`: `li h2` (a field's title) is now
-small-caps-style — uppercase, smaller, humanist sans, muted color, letter-
-spacing — reading as a label rather than content; `li p` (the field's own
-text) is now the larger, higher-contrast element, unambiguously the thing
-being said. `renderOwner`'s per-field markup puts `<details class="edit-
+bold and larger (`font-weight: 700`, `1.2rem`, humanist sans, full-contrast
+`--text`) — first pass used small-caps (uppercase, smaller, muted) instead,
+but that read as a quiet caption rather than the more prominent of the
+two, so it was swapped for the opposite move: make the title *more*
+emphatic, not the content less so. `li p` (the field's own text) stays
+body-sized but now carries `--text-muted`, the secondary color, so the
+two are distinct by both weight/size and color rather than one trick
+alone. `renderOwner`'s per-field markup puts `<details class="edit-
 field">` inside `.field-actions` next to the Remove form (both already
 flex/inline), rather than as a sibling block after it; `.field-actions`'s
 existing `flex-wrap` still lets them wrap to their own lines at narrow

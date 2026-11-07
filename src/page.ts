@@ -141,14 +141,12 @@ const STYLE = `
   li:first-child { border-top: 0; }
   li h2 {
     margin: 0 0 0.35rem;
-    font-size: 0.8rem;
+    font-size: 1.2rem;
     font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    font-weight: 700;
+    color: var(--text);
   }
-  li p { margin: 0 0 0.6rem; font-size: 1.1rem; white-space: pre-wrap; }
+  li p { margin: 0 0 0.6rem; color: var(--text-muted); white-space: pre-wrap; }
   li > a { display: block; color: inherit; text-decoration: none; }
   li > a:hover h2, li > a:focus-visible h2 { color: var(--accent); }
   li > a p { color: var(--text-muted); }
