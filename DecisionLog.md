@@ -887,6 +887,35 @@ is a general CSS correctness fix, not specific to this one dialog — any
 future `hidden`-toggled element (not just forms) was exposed to the same
 bug.
 
+**39. Readability pass on `/me`'s field list: title styled distinctly from
+content; Edit sits next to Remove instead of on its own line; "Add a
+field" moved to the bottom of the page, above the share-link block.**
+Context: feedback after using the page — a field's title and its content
+read too similarly, especially when the content was short (a one- or
+two-word answer looked no different from its own title); Edit's
+`<details>` rendered on a line of its own under the Remove button instead
+of beside it; and "Add a field" sat at the top of `/me`, ahead of the
+field list itself, which buries the list you actually came to read behind
+a creation form every time.
+What changed, `src/page.ts`'s `STYLE`: `li h2` (a field's title) is now
+small-caps-style — uppercase, smaller, humanist sans, muted color, letter-
+spacing — reading as a label rather than content; `li p` (the field's own
+text) is now the larger, higher-contrast element, unambiguously the thing
+being said. `renderOwner`'s per-field markup puts `<details class="edit-
+field">` inside `.field-actions` next to the Remove form (both already
+flex/inline), rather than as a sibling block after it; `.field-actions`'s
+existing `flex-wrap` still lets them wrap to their own lines at narrow
+widths. The `/me/events` reconnect script was updated to build the same
+order (`actions.append(editDetails, deleteForm)`) so a live update matches
+what's server-rendered. The add-field form, its dialog, and the hidden
+trigger button all moved below `<ul id="fields">`, directly above the
+`<hr class="rule" />`/share-link block — profile fields are now the first
+thing on the page after any error/notice banner, with field creation
+positioned as the last action on the page rather than the first.
+Not changed: the dialog's own content/mechanism (decision 36), `/search`'s
+unrelated dropdown-and-Add row (decision 37), or any route/request
+handling — this pass is layout and typography only.
+
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
   title's existence and holder-count without holding it themselves —
   confirmed by the same audit (querying a single/double-letter prefix

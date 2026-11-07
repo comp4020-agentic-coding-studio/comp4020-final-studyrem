@@ -122,7 +122,7 @@ const STYLE = `
   details.signup summary:hover { color: var(--accent-hover); }
   details.signup[open] summary { margin-bottom: 1.25rem; }
   details.edit-field {
-    margin-top: 0.6rem;
+    display: inline-block;
   }
   details.edit-field summary {
     cursor: pointer;
@@ -132,12 +132,23 @@ const STYLE = `
   }
   details.edit-field summary::-webkit-details-marker { display: none; }
   details.edit-field summary:hover { color: var(--accent); }
-  details.edit-field form { margin: 0.75rem 0 0; }
+  details.edit-field form {
+    margin: 0.75rem 0 0;
+    min-width: 16rem;
+  }
   ul { list-style: none; padding: 0; margin: 1.5rem 0; }
   li { border-top: 1px solid var(--border-subtle); padding: 1.25rem 0; }
   li:first-child { border-top: 0; }
-  li h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
-  li p { margin: 0 0 0.6rem; white-space: pre-wrap; }
+  li h2 {
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  li p { margin: 0 0 0.6rem; font-size: 1.1rem; white-space: pre-wrap; }
   li > a { display: block; color: inherit; text-decoration: none; }
   li > a:hover h2, li > a:focus-visible h2 { color: var(--accent); }
   li > a p { color: var(--text-muted); }
@@ -370,8 +381,6 @@ export function renderOwner(
       fieldItem(
         f,
         `<div class="field-actions">
-<form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
-</div>
 <details class="edit-field">
   <summary>Edit</summary>
   <form method="post" action="/me/fields/${encodeURIComponent(f.id)}/edit">
@@ -379,7 +388,9 @@ export function renderOwner(
     <label>What you want to say <textarea name="content" required maxlength="2000" rows="4">${escapeHtml(f.content)}</textarea></label>
     <button type="submit">Save</button>
   </form>
-</details>`,
+</details>
+<form class="inline" method="post" action="/me/fields/${encodeURIComponent(f.id)}/delete"><button type="submit">Remove</button></form>
+</div>`,
       ),
     )
     .join("\n");
@@ -391,9 +402,13 @@ export function renderOwner(
     `${siteNav(username)}
 <h1>Your profile</h1>
 ${messageBlock}
+<datalist id="title-suggestions"></datalist>
+<p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>No fields yet &mdash; add the first one.</p>
+<ul id="fields">
+${items}
+</ul>
 <form method="post" action="/me/fields" id="add-field-fallback">
   <label>Field title <input name="title" required maxlength="80" list="title-suggestions" autocomplete="off" /></label>
-  <datalist id="title-suggestions"></datalist>
   <label>What you want to say <textarea name="content" required maxlength="2000" rows="4"></textarea></label>
   <button type="submit">Add field</button>
 </form>
@@ -407,10 +422,6 @@ ${messageBlock}
   </form>
   <button type="button" id="add-field-cancel">Cancel</button>
 </dialog>
-<p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>No fields yet &mdash; add the first one.</p>
-<ul id="fields">
-${items}
-</ul>
 <script>
 (() => {
   // Both the always-present form and the dialog's copy share the same
@@ -482,7 +493,6 @@ ${items}
       deleteForm.append(deleteButton);
       const actions = document.createElement("div");
       actions.className = "field-actions";
-      actions.append(deleteForm);
       // A live-pushed field (another tab's edit/add/remove) keeps whatever
       // open/closed state its own <details> already had, since this whole
       // <li> is only rebuilt from scratch when its id wasn't already on the
@@ -518,7 +528,8 @@ ${items}
       saveButton.textContent = "Save";
       editForm.append(titleLabel, contentLabel, saveButton);
       editDetails.append(editSummary, editForm);
-      li.append(h, p, actions, editDetails);
+      actions.append(editDetails, deleteForm);
+      li.append(h, p, actions);
       if (!seenIds.has(f.id)) {
         li.classList.add("field-enter");
         newlyArrived.push(li);
