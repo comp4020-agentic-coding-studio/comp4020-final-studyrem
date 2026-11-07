@@ -903,9 +903,12 @@ bold and larger (`font-weight: 700`, `1.2rem`, humanist sans, full-contrast
 but that read as a quiet caption rather than the more prominent of the
 two, so it was swapped for the opposite move: make the title *more*
 emphatic, not the content less so. `li p` (the field's own text) stays
-body-sized but now carries `--text-muted`, the secondary color, so the
-two are distinct by both weight/size and color rather than one trick
-alone. `renderOwner`'s per-field markup puts `<details class="edit-
+body-sized in the normal `--text` color — tried muting it too, but that
+read as deliberately deemphasizing the content itself, which is the thing
+a profile is actually *for*; distinction comes from the title's weight
+and size alone. (`li > a p`, the separate rule for linked list items like
+search results, is untouched — still muted there, a different context.)
+`renderOwner`'s per-field markup puts `<details class="edit-
 field">` inside `.field-actions` next to the Remove form (both already
 flex/inline), rather than as a sibling block after it; `.field-actions`'s
 existing `flex-wrap` still lets them wrap to their own lines at narrow

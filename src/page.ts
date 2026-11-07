@@ -146,7 +146,7 @@ const STYLE = `
     font-weight: 700;
     color: var(--text);
   }
-  li p { margin: 0 0 0.6rem; color: var(--text-muted); white-space: pre-wrap; }
+  li p { margin: 0 0 0.6rem; white-space: pre-wrap; }
   li > a { display: block; color: inherit; text-decoration: none; }
   li > a:hover h2, li > a:focus-visible h2 { color: var(--accent); }
   li > a p { color: var(--text-muted); }
