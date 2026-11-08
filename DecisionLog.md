@@ -494,10 +494,17 @@ username, unlike every other audit line involving two parties (decision
 19). Nothing about a suggestion is pushed live or resurfaced outside the
 moment of that profile view, per decision 7's "discovery and suggestions
 stay pull-based" — the SSE stream (`src/live.ts`) is untouched.
-Where it renders: `renderMutualProfile` (`src/page.ts`), below the shared-
-fields list, with a form posting straight to the existing `/me/fields`
-handler — adding the suggested field is identical to adding any other
-field, so no new route was needed.
+Where it renders (as built here): `renderMutualProfile` (`src/page.ts`),
+below the shared-fields list, with a form posting straight to the existing
+`/me/fields` handler — adding the suggested field is identical to adding
+any other field, so no new route was needed. **Superseded by a later bug
+fix in this same repo** (not itself logged as a numbered decision, per an
+explicit call that it was a bug fix, not a design decision): rendering it
+immediately on the owner's own profile effectively named the owner as the
+source, contradicting "anonymized" above. The suggestion is now queued in
+a `pending_suggestions` table at this same encounter and only shown later,
+on the viewer's own `/me` (`renderOwner`) — never on the profile that
+prompted it. See `docs/USER_MANUAL.md` for the current behavior.
 
 **27. No standalone "browse available fields" pool; the suggestion
 mechanism (decision 9/26) is the answer to "what do I put in my profile."**
@@ -1063,19 +1070,36 @@ already covers this — it reads `README.md`'s actual headings (now
 including "Priya's story") and confirms each appears, in order, on the
 served page.
 
-## Open / not yet decided
+**44. Mechanism 2 from decision 9 (push a new field to some users, widen it
+if most adopt it) stays unbuilt — closed for the final submission, not
+resolved.**
+Context: this sat as an open item since decision 9 was corrected — not
+rejected, despite how an earlier version of that entry read, but set aside
+because no workable balance was found between *pushing* a field onto users
+and just *hinting* at one.
+Why closing it now rather than leaving it open: with the final project due,
+there's no remaining time to actually design that balance, so marking it
+"open" any longer would overstate how unsettled it still is — it's not
+pending a decision, it's not happening this project. Mechanism 1 (the
+per-encounter suggestion, decision 26) is what's built and submitted.
+If this project continued: revisit only if a concrete version of the
+push/hint balance gets designed; there's no reason to believe one exists
+yet.
 
-- Mechanism 2 from decision 9 (push a new field to some users, widen if
-  most adopt it) — not rejected, despite how an earlier version of this
-  entry read. Set aside because no workable balance was found between
-  *pushing* a field onto users and just *hinting* at one, not because of
-  scale. Revisit if a concrete version of that balance gets designed;
-  Mechanism 1 (the per-encounter suggestion, decision 26) remains what's
-  actually built in the meantime.
-- `GET /fields/suggest` (decision 21) lets any logged-in user learn a
-  title's existence and holder-count without holding it themselves —
-  confirmed by the same audit (querying a single/double-letter prefix
-  surfaces titles across the whole system, titles and counts only, never
-  content or usernames). Left as-is for now (probably intentional — it's
-  literally how you discover what to type — but not an explicit call when
-  decision 21 was made).
+**45. `GET /fields/suggest` (decision 21) keeps returning any title's
+existence and holder-count to any logged-in user who queries it, whether
+or not they hold that title — left as-is deliberately, not by oversight.**
+Context: raised at decision 21, surfaced again by the audit behind
+decisions 22–24 (querying a single/double-letter prefix surfaces titles
+across the whole system — titles and counts only, never content or
+usernames) — never explicitly decided one way or the other since.
+Why closing it as "keep, as designed" rather than leaving it open: this is
+exactly what the endpoint is for — decision 10's "nudge toward a shared
+vocabulary" only works if a half-typed title can be completed from what
+other users have already named. The information it exposes (a title
+string and a count) is the same category decision 4 already accepts is
+fine to be system-wide (unlike content or who holds a field, which stay
+gated by decision 3's mutual-visibility rule everywhere else). With no
+time left before submission to design a narrower version, and no concrete
+harm identified beyond what decision 4 already accepted, closing this as
+the intended behavior rather than an unresolved gap.
