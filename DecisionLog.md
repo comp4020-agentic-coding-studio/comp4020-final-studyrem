@@ -967,6 +967,12 @@ deployed volume over `fly ssh console`. Documented in
 Scope: this only changes *where* the log is kept — what gets logged, and
 the content/password exclusions decision 19 already settled, are
 unchanged.
+Fixed alongside, caught by actually running `scripts/audit-log.ts` over
+`fly ssh console` against the live deployed app rather than assuming the
+Dockerfile already covered it: `Dockerfile` wasn't copying `scripts/` into
+the image (the same omission decision 40 already hit once for `docs/`) —
+`node scripts/audit-log.ts` would have 404'd with `MODULE_NOT_FOUND` on the
+deployed machine despite working locally. Added `COPY scripts ./scripts`.
 
 ## Open / not yet decided
 
