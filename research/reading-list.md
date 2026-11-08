@@ -111,11 +111,17 @@ true, which no test can check by construction.
   own mistakes in 51.8% of agentic rollouts, despite reliably spotting the
   identical mistake as an outside reviewer. Close to this section's thesis
   stated directly.
-- **"Confident and Wrong: Silent Semantic Failures in Coding Agents"**
-  (Snowflake AI Research) — https://arxiv.org/abs/2603.25764 — GPT-5 submits
-  a patch on 100% of SWE-bench runs but resolves only 44%; the failure is
-  invisible because confidence never dips. Undercuts "the agent would flag
-  it if unsure."
+- **Mehta, "Confident and Wrong: Silent Semantic Failures in Coding
+  Agents"** — https://arxiv.org/abs/2603.25764 — correction: author is Aman
+  Mehta, not "Snowflake AI Research" as previously written here (no
+  institutional affiliation given in the paper). GPT-5 submits a patch on
+  100% of SWE-bench runs but resolves only 44% (Llama 4: 99% submit / 18%
+  resolve). Correction: the paper does not measure confidence or
+  calibration — "confident" in the title is used colloquially, meaning the
+  same wrong answer is produced consistently/repeatedly, not that a
+  measured confidence score fails to drop. Don't cite this paper for "no
+  dip in confidence" or any calibration claim; cite it only for the
+  submit-rate/resolve-rate gap itself.
 - **"Unverified Completion: Measuring the Gap Between Reported and Actual
   State in Agent-Executed Infrastructure Work"** —
   https://www.researchgate.net/publication/414264282_Unverified_Completion_Measuring_the_Gap_Between_Reported_and_Actual_State_in_Agent-Executed_Infrastructure_Work
@@ -151,12 +157,21 @@ verification/defense-layer correlation directly, requiring no analogy:
   https://arxiv.org/abs/2610.29178 — verified as a real 2026 paper (an
   initial flag during verification, over unfamiliar model names in the
   text, turned out to be a knowledge-cutoff false alarm, confirmed real via
-  independent search). Twelve monitor models reviewing payment approvals;
-  one attack optimized against a single model family fooled 10 of 12
-  simultaneously. The fix that worked: counting independent evidence
-  *sources*, not counting *votes* — a source-counting rule blocked only
-  0.9% of correct payments vs. 7.4% for the best vote-counting rule at
-  equal safety.
+  independent search). Correction, caught on a second full-text check: the
+  twelve monitors are **not independently-chosen** — they are a deliberate
+  4×3 grid (four base model families — Llama 3.1 8B, Ministral 3 8B, Qwen
+  3.5 9B, Gemma 4 E4B — each repeated across three evidence sources),
+  built explicitly to test shared-failure structure, not to assemble twelve
+  independent judges; the paper's own framing is "monitors that share a
+  base model or a poisoned input may fail together." The "10 of 12" figure
+  is also not the headline result — it's a pre-registered confirmatory
+  robustness check (§5.5) where a payload optimized against Gemma broke the
+  paper's own worst-case hypothesis; the actual headline is "no rule over
+  the twelve monitors survives every measured attack." Don't describe these
+  monitors as "independently-chosen" — that inverts the paper's design and
+  thesis. The fix that worked: counting independent evidence *sources*, not
+  counting *votes* — a source-counting rule blocked only 0.9% of correct
+  payments vs. 7.4% for the best vote-counting rule at equal safety.
 - **The reframe this licenses**: whether two checks count as independent
   "layers" is an empirical question — do they fail on the same inputs? —
   not a bookkeeping one — did you invoke a different model? If a second
@@ -567,11 +582,16 @@ flagged in section A:
 
 - **Bouke, "A Competing-Hazards Systematization of Loss of Control in
   Autonomous Agents"** — https://arxiv.org/abs/2609.38411 — (dataset:
-  https://zenodo.org/records/22995268) — audits 22 scope-escape incidents:
-  in 20 of 22, *the environment itself* allowed the out-of-scope action —
-  loss of control was mostly permissive boundary conditions, not "rogue"
-  reasoning. The single best scoping citation if the note uses this angle
-  at all; generalizes the PocketOS/idsalliance argument below across 22
+  https://zenodo.org/records/22995268) — correction: audits 22 loss-of-
+  control incidents sorted into four outcome categories (approved
+  completion, safe stopping, scope escape, continuation), not 22 incidents
+  all formally labeled "scope escape" — the 20-of-22 figure is a
+  cross-cutting observation over the whole sample, not a count confined to
+  the scope-escape category alone. In 20 of 22, *the environment itself*
+  allowed the out-of-scope action — loss of control was mostly permissive
+  boundary conditions, not "rogue" reasoning. The single best scoping
+  citation if the note uses this angle at all; generalizes the
+  PocketOS/idsalliance argument below across 22
   cases.
 - **"Empirical Evaluation of Task-Based Permission Scoping Architecture for
   AI Agents"** — https://arxiv.org/abs/2609.15422 — the mechanism

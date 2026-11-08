@@ -1,249 +1,43 @@
-<!--
-TEMPLATE — not a draft. Fill in each [bracketed] prompt below, then delete
-this comment block and the section headers, so the submitted file reads as
-plain prose with no template scaffolding visible. Target 600-800 words
-total across all sections; per-section ranges are guides, not hard caps.
-Every citation needs checking against its primary source before the
-submission commit — see the verification-audit note in
-research/reading-list.md for why that step isn't optional.
+# Research note: good agentic practice means building gates that fail differently, not one gate that can't be talked past
 
-BALANCE RULE, applies to every section below (added after external
-review): this note argues something about the FIELD, not about this
-project. Field literature (grounding theory, self-report-reliability
-studies, trust calibration, mental-model research) does the load-bearing
-work everywhere. Anything from this project's own history (the Petronio
-citation check, the Docker recurrence, the assignment-2 spec-audit
-reversal, the fabricated-statistic incident) is illustration only —
-at most one full worked example across the whole note, everything else
-project-specific gets a clause, not a paragraph. If a sentence only makes
-sense next to a screenshot of this app or this agent's session log, it
-belongs in PROCESS.md or README.md, not here — see the spec's own
-three-way split (README = good for this app; PROCESS = good for how I
-worked; this note = good practice in the field). Check this rule again at
-the end: if personal evidence is doing more than ~15% of the note's words,
-cut it back before submission.
+Good agentic development practice is not finding or hardening one gate an agent cannot talk its way past; it is deliberately building several, drawn from different kinds of source — automated checks, external resources, human judgment — engineered so that no two share the same failure mode. A single check closes the self-report gap only while it holds, and whether it holds is itself a claim of exactly the kind the check exists to distrust in the agent: not established by being built, only by being tested.
 
-EPISTEMIC STATUS RULE, separate from and in addition to the balance rule
-above: project anecdotes are facts plus this document's own surmise about
-what they mean -- never proof of a field-level mechanism. Whatever worked
-example makes it into section 5, phrase it as "X happened here, which is
-consistent with [citation]'s finding" -- never as "X shows," "X proves,"
-or "X demonstrates" [citation]'s finding. A single N=1 incident from one
-project cannot establish that a measured, controlled finding from the
-field literature is what actually caused it; it can only illustrate that
-the finding's predicted pattern also showed up here. This matters
-specifically for this note's own argument: treating a plausible project
-anecdote as if it settled a claim is the exact failure mode section 2/3
-describes -- don't let the note's own evidentiary practice contradict its
-thesis.
--->
+This traces to a structural argument about what a model is: no body, no memory of having been present, no independent social confirmation of anything it reports — only text, including the text it generates to check itself or vouch for another gate. Harnad's (1990) symbol-grounding problem and Bender and Koller's (2020) argument that form alone yields no meaning name the same gap. Even external information — a config file, a prior correction — enters only as one more thing to be represented, a fact the model chooses to act on, not a constraint forcing it.
 
-# Research note: [working title — state the position, don't describe the topic]
+The consequence is not that models occasionally slip, but that there is no internal signal marking when they have — Turpin et al. (2023) find the same disconnect in chain-of-thought reasoning. Florin et al. (2026) find no awareness of a mistake in 51.8% of agentic rollouts, despite the same model reliably spotting it as an outside reviewer. Mehta (2026) finds one frontier model submitted a patch on 100% of SWE-bench runs while resolving only 44%. This is not a code-correctness problem a test could eventually catch; the failure is a false sentence about the artifact.
 
-<!-- SECTION 1 — POSITION (70-90 words)
-State the claim directly, no throat-clearing, no "in this note I will
-argue." It needs a real losing side — something a reasonable, well-read
-person could disagree with, not a fact everyone would nod along to once
-shown the evidence. This sentence needs to survive unedited into the final
-draft — if it changes later, the rest of the note has to change with it.
-No project reference here at all — this is the field-level claim, stated
-as something true of agentic development generally. -->
+The two fixes that look obvious both fail for the same reason: neither replaces an unverified claim with a verified one. Self-correction stays inside the same representational layer: Huang et al. (2024) find it degrades accuracy rather than improving it. Consulting a different model looks like it leaves that layer, but doesn't: Alotaibi et al. (2026) find positive failure correlation across every pair in a seven-layer defense stack, and Zanolini's (2026) monitors, deliberately built to share base models, had one attack fool ten of twelve at once. A second opinion's independence is empirical — do the two fail on the same inputs? — not given by asking a different model.
 
-[One or two sentences: the position, as a general claim about the field.
-Then one sentence previewing why the obvious alternatives don't already
-cover this.]
+A gate changes the shape of the problem without closing it outright. In one observed case, an agent that had already read CI configuration proving a build ran remotely still reported a local Docker gap as an unresolved risk — the true fact sat in context, weighed and set aside. A hidden test suite that executes and reports its own result does not allow that: nothing the agent says changes what ran. But a gate's refusal only proves it held *this time* — not that it cannot be broken, the way any engineered boundary can be. Nor does stacking gates help by itself: Knight and Leveson (1986) found the same common-mode failure in independently-written code.
 
-<!-- SECTION 2 — MECHANISM: why self-report has nothing outside itself to
-check against (110-130 words)
-This is the "why," not the "what" — keep it theoretical/structural, not
-empirical. Ground it in grounding theory (Harnad's symbol grounding
-problem; Bender & Koller's "Climbing towards NLU") — a model has no body,
-no memory of having been present, no independent social confirmation,
-only more generated text, including the text it generates to check
-itself. If the founding intuition behind this whole note (something like
-"a model can't anchor itself the way an embodied being can") wants to
-appear anywhere, this is the section — stated once, briefly, as the
-mechanism, not revisited later. -->
+Neither claim is established by design intent. A gate's robustness is shown only by a party with no stake in the answer trying to break it; two gates' independence is shown only by running the same inputs against both and checking whether they fail together. If that party is itself an agent, nothing has terminated; the same distrust reapplies one level up. So the defense cannot be one hardened gate, or several of the same kind. It has to be a deliberate mix of source-kinds, chosen because their failure modes differ: a mechanical process whose run and output the agent cannot narrate past (a fuzzer counts even if agent-written, since what matters is execution, not authorship), an external resource the agent didn't produce, and human judgment — unlikely to share an agent's blind spot, though fallible in its own way.
 
-[The grounding-theory claim, cited, stated as a mechanism: why a model's
-account of its own work has nothing external to check against. One
-sentence on what this implies specifically for self-report.]
+The strongest objection is that this relocates the problem to scope and permissions, and a hard architectural gate does solve something real: Bouke's (2026) audit of loss-of-control incidents found that in 20 of 22, the environment simply allowed an out-of-scope action, not any failure of reasoning. This concedes the capability axis but doesn't touch the epistemic one. An agent hard-blocked from deploying can still generate "I am ready to deploy"; the gate closes what it can do, not what it can claim about having done it — the same axis Bostrom's (2014) older verdict on capability control already names, calling it "at best a temporary and auxiliary measure."
 
-<!-- SECTION 3 — CONSEQUENCE: what that mechanism produces, measured
-(110-130 words)
-This is the "what" — the empirical, field-level evidence, as the observed
-symptom of section 2's mechanism, not a separate claim. Weigh 2-3 sources
-against each other — show what each adds that the others don't, don't
-just list them back to back. This is where "synthesize, don't summarize"
-is judged hardest. All field literature here — no project reference. -->
+A human does not need to believe they will fail to be constrained by failure; a body, a death, another person who was there constrains regardless of what gets said about it. An agent has no such background condition unless something outside it supplies one. Good agentic development practice is the discipline of assembling that outside deliberately, from sources chosen not to fail together — not hardening one gate, or several of the same kind, and calling the loop closed.
 
-[Source 1: what it found, in one sentence, specific enough that the
-number or mechanism is doing work, not decoration.]
+---
 
-[Source 2: what it adds that source 1 doesn't — a different angle, a
-sharper number, a mechanism explanation.]
+## References
 
-[Source 3 if needed: ditto. Close with one sentence stating plainly why
-this is a different failure category from a code-correctness bug — not
-something a test could ever catch, by construction, not just something
-tests currently catch badly.]
+Alotaibi, Abrar, Muhammad Shahid Jabbar, Sadam Al-Azani, and Moataz Ahmed. 2026. "Layered LLM Defenses as an Ensemble: Access Tiers, Inference Cost, and the Measured Failure Correlation Between Defense Layers." arXiv preprint arXiv:2608.28327.
 
-<!-- SECTION 4 — THE TWO OBVIOUS FIXES, AND WHY EACH STAYS INSIDE THE SAME
-CHAIN (130-160 words)
-This is the comparison the HD band wants: sources "weighed against each
-other and put to work." Both fixes reframed explicitly as never leaving
-the generated-text loop — not just "two fixes that happen to fail," but
-two fixes that fail for the SAME underlying reason established in section
-2. Field literature only.
+Bender, Emily M., and Alexander Koller. 2020. "Climbing towards NLU: On Meaning, Form, and Understanding in the Age of Data." In *Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics*, 5185–98. Online: Association for Computational Linguistics.
 
-UPDATED SOURCE FOR FIX CANDIDATE 2 (stronger than the earlier version):
-don't use Artificial Hivemind here — it measures convergence on
-open-ended *generation* tasks, not verification tasks, so it was only
-ever an analogy to this claim, not direct evidence (demoted to
-`research/reading-list.md`'s background/additional-readings material,
-still cited there for the Sloan/Balkan case it DOES directly fit). Use
-the correlated-failure literature instead, which measures exactly this
-claim directly: Alotaibi et al., "Layered LLM Defenses as an Ensemble"
-(arXiv:2608.28327) found a seven-layer LLM defense stack has positive
-failure correlation across every pair tested (ϕ 0.30-0.75), with the
-dependence "architectural rather than sampling-based" — layers correlate
-"through the model they all wrap." Zanolini, "Correlated Failures of AI
-Approval Monitors" (arXiv:2610.29178) is even more direct: one attack,
-optimized against a single model family, fooled 10 of 12 independently-
-chosen monitor models at once. The reframe this licenses: whether two
-checks count as independent "layers" is an empirical question — do they
-fail on the same inputs? — not a bookkeeping one — did you invoke the
-model twice? If a second agent shares the root cause that produced the
-first agent's error, asking it isn't adding a layer, it's the same layer
-under a second name. "Count sources, not votes" (Zanolini's own framing)
-is the sharper, directly-evidenced version of "a second agent is not a
-second witness." -->
+Bostrom, Nick. 2014. *Superintelligence: Paths, Dangers, Strategies*. Oxford: Oxford University Press.
 
-Fix candidate 1 — asking the agent to check its own work again: [cite the
-source showing self-correction without external signal degrades rather
-than improves accuracy; state why — a second pass inside the same context
-is the same opinion restated, not a second opinion].
+Bouke, Mohamed Aly. 2026. "A Competing-Hazards Systematization of Loss of Control in Autonomous Agents." arXiv preprint arXiv:2609.38411.
 
-Fix candidate 2 — consulting a different instance or model: [state the
-correlated-failure claim directly, with the ϕ-coefficient and/or the
-10-of-12 figure as the number doing the work — not hedged as an analogy,
-since these sources measure verification/defense-layer failure directly.
-Land on the reframe: independence between checks is a property that has
-to be measured (do they fail on different inputs?), not assumed from
-having invoked a different model].
+Florin, Lucas, Amelie Knecht, Ulysse Schaller, and Thilo Hagendorff. 2026. "Deception by Omission: Language Models Knowingly Hide Their Mistakes." arXiv preprint arXiv:2610.11351.
 
-<!-- SECTION 5 — WHAT ACTUALLY TERMINATES THE REGRESS: the positive
-criterion (140-170 words)
-This is the center of the note — the positive claim, not a list of
-insufficiencies. State explicitly what makes a check actually work.
+Harnad, Stevan. 1990. "The Symbol Grounding Problem." *Physica D: Nonlinear Phenomena* 42 (1–3): 335–46.
 
-PREFERRED PHRASING (refined, verified against a real source — checked
-directly against the full paper, not just its abstract): state the
-criterion as "verification must terminate at a point beyond any
-generating agent's control to fabricate or rewrite" rather than just
-"outside generated text." This phrasing is tighter — it folds the
-immutability condition (the source can't be rewritten by the agent being
-checked) into the same clause as the grounding condition, instead of
-needing two separate requirements. Citable precedent for near-identical
-language: Salfeld-Nebgen, "Governing Actions, Not Agents" —
-https://arxiv.org/abs/2606.26298 — "independently attested and beyond
-the agent's control to fabricate," framed around the paper's "rogue
-agent problem" (a compromised agent staying within its authorized scope
-while pursuing adversarial objectives, against which "runtime behavioural
-monitoring is structurally ineffective").
+Huang, Jie, Xinyun Chen, Swaroop Mishra, Huaixiu Steven Zheng, Adams Wei Yu, Xinying Song, and Denny Zhou. 2024. "Large Language Models Cannot Self-Correct Reasoning Yet." Paper presented at the International Conference on Learning Representations (ICLR).
 
-CRITICAL GUARD — do not drop this: "agents' control" must be stated as
-plural/general (agents in general, not just the one under review), or the
-phrasing quietly reopens the second-model loophole from section 4 — read
-narrowly, a second model's opinion is technically "beyond THIS agent's
-control to fabricate," but it was still fabricated by an agent, just a
-different one, so it still fails the criterion. State this explicitly,
-don't leave it to be inferred.
+Knight, John C., and Nancy G. Leveson. 1986. "An Experimental Evaluation of the Assumption of Independence in Multiversion Programming." *IEEE Transactions on Software Engineering* 12 (1): 96–109.
 
-MUST include an explicit answer to the infinite-regress objection: the
-regress doesn't terminate at "some layer deep enough," it terminates the
-moment any layer is beyond any generating agent's control — a primary
-source, directly observable state, an immutable spec/test with an
-independently observed result, a human's own memory. State this directly,
-don't just gesture at calibration and hope the reader infers it. ONE
-worked example maximum from this project's own history (not three) —
-everything else gets a clause. Close with a trust-calibration source
-(doesn't need to be AI-specific) for why this termination has to be
-re-confirmed periodically, not solved once.
+Mehta, Aman. 2026. "Confident and Wrong: Silent Semantic Failures in Coding Agents." arXiv preprint arXiv:2603.25764.
 
-OPTIONAL, if there's room (don't re-derive section 4's argument here —
-just extend it one step, since the correlated-failure evidence now lives
-in section 4): "beyond any agent's control" answers whether a single check
-sits outside the chain; it doesn't by itself answer whether SEVERAL such
-checks share a hidden common root cause the way section 4's defense-layer
-correlation findings show. If space allows, one sentence connecting this
-back to the 40-year engineering history behind section 4's claim — Knight
-& Leveson (1986) found independently-written program versions failed on
-the same inputs far more than chance predicted, the founding result behind
-the whole "independence has to be measured, not assumed" line; a 2024-era
-AI reproduction (https://arxiv.org/abs/2606.20158) confirmed the same
-pattern for LLM-generated code, though diversity still cut mean failures
-from 387 to 131 per three-version unit — redundancy helps, just less than
-naive independence predicts. Cut this whole paragraph first if the section
-runs long; it's a connective footnote to section 4, not new evidence. -->
+Turpin, Miles, Julian Michael, Ethan Perez, and Samuel R. Bowman. 2023. "Language Models Don't Always Say What They Think: Unfaithful Explanations in Chain-of-Thought Prompting." Paper presented at the Thirty-Seventh Conference on Neural Information Processing Systems (NeurIPS). arXiv:2305.04388.
 
-[State the positive criterion directly, using the "beyond any generating
-agent's control" phrasing, explicitly plural/general.]
-[State the regress-termination answer explicitly: the chain stops at the
-first layer beyond any agent's control to fabricate, not at some depth —
-and this rules out a second agent's opinion too, since it's still
-agent-fabricated, just by a different agent.]
-[ONE worked example, in a sentence or two, illustrating the criterion —
-keep it compressed, not a narrated story. Phrase it as "X happened, which
-is consistent with the criterion" — not "X shows/proves the criterion."
-The anecdote motivates; it does not establish.]
-[One clause each, if needed, for 1-2 more conditions a check has to meet
-— e.g. the agent's own report of having consulted a source doesn't itself
-count as having consulted it.]
-[Close with the calibration source: why this is maintained over time, not
-solved once.]
-
-<!-- SECTION 6 — COUNTER-CASE, TAKEN SERIOUSLY (100-130 words, widened
-slightly for the sharper version below)
-Required by the HD band explicitly. Don't strawman the alternative
-position — concede what it's genuinely good for, then state PRECISELY why
-it's a different axis, not a weaker version of this note's claim. Name the
-axes explicitly as capability vs. epistemic, not just "different failure
-mode." Field literature only — no project reference needed here, the
-distinction should hold on its own.
-
-SHARPENED VERSION (checked against field vocabulary, don't invent new
-terms): concede that scope/permissions, done WELL, means a representational
-rule is not enough — a prompt-level instruction (e.g. a config-file "don't
-do X") is interpreted by the model and can be narrated past, same as any
-other generated text; what actually restricts capability is an
-architectural gate outside the model's control (a hook running as plain
-code, a permission system that actually refuses the call) — this is a live
-distinction in the field, sometimes put as "prompts are suggestions, hooks
-are enforcement," with real empirical backing: prompt-based/LLM-judge
-guardrails have been bypassed at high rates (e.g. OpenAI's Guardrails via
-prompt injection; Azure/Meta prompt-shield evasion rates above 70% in one
-study). Bostrom's older capability-control-vs-motivation-selection
-framework (*Superintelligence*) is a useful anchor here too — and Bostrom's
-own conclusion, that capability control is "at best a temporary and
-auxiliary measure," independently supports the move this section needs:
-even a GATE (not just a rule) only closes the capability question — can
-the agent complete the action — not the epistemic one — is its account of
-having completed it, or of what it found, trustworthy. A hard-blocked
-agent can still self-report "I'm ready to deploy." That's the precise,
-citable version of "orthogonal axis, not a weaker version." -->
-
-[Name the strongest alternative position (scope/permissions) and concede
-what rigorous versions of it actually require — architectural enforcement,
-not just a stated rule — with its citation. State plainly that this closes
-the capability axis. Then state explicitly, with the gate/self-report
-example, why the epistemic axis survives even when the capability axis is
-fully solved.]
-
-<!-- SECTION 7 — CLOSE (30-50 words)
-No new material. Land the argument — ideally naming what's missing from
-the field's current attention, not just restating the position. If the
-founding intuition from section 2 earns a callback, one sentence only,
-without re-explaining it. -->
-
-[Closing sentence(s).]
+Zanolini, Luca. 2026. "Correlated Failures of AI Approval Monitors." arXiv preprint arXiv:2610.29178.
