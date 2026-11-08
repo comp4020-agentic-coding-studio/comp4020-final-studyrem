@@ -1,9 +1,9 @@
 # syntax = docker/dockerfile:1
 
 # Plain node:http, no framework — the one runtime dependency (marked, for
-# /readme/) is installed from the committed lockfile so the image matches
-# what pnpm resolved locally. fly.toml fixes the rest of the shape: one
-# machine, one volume at /data, HTTP on 0.0.0.0:$PORT.
+# /readme/ and /manual/) is installed from the committed lockfile so the
+# image matches what pnpm resolved locally. fly.toml fixes the rest of the
+# shape: one machine, one volume at /data, HTTP on 0.0.0.0:$PORT.
 FROM node:24-slim
 
 WORKDIR /app
@@ -16,6 +16,7 @@ RUN npm install --global pnpm@11.17.0 \
 
 COPY src ./src
 COPY README.md ./
+COPY docs ./docs
 
 ENV PORT=8080
 EXPOSE 8080

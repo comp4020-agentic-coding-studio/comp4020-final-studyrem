@@ -923,6 +923,33 @@ Not changed: the dialog's own content/mechanism (decision 36), `/search`'s
 unrelated dropdown-and-Add row (decision 37), or any route/request
 handling — this pass is layout and typography only.
 
+**40. Added a user manual (`docs/USER_MANUAL.md`), published live at
+`/manual/`, linked from `README.md`.**
+Context: the teaching team needs a brief description of what's actually
+usable in the app — not the design argument README.md makes, a plain
+page-by-page account of what a user can do.
+What changed: `docs/USER_MANUAL.md` covers signup/login, `/me` (add, edit,
+remove a field; live sync across tabs), `/u/<username>` (mutual visibility,
+live updates, the suggestion hint), `/search` (strict-vs-partial matching,
+linking to results), and a short note on what the audit log does and
+doesn't record. Follows `/readme/`'s exact pattern: a new `GET /manual/`
+route in `src/server.ts` renders the markdown via `marked`, same as
+`README.md`, and a new `renderManual` in `src/page.ts` wraps it in the
+shared layout with a back-link. `Dockerfile` updated to `COPY docs ./docs`
+— without it, `/manual/` would 404 in production despite working locally,
+since only `src` and `README.md` were being copied into the image before.
+Linked from `README.md` as a single line after the citations, outside the
+prose sections, deliberately not counted toward the 400–600 word spec cap
+on the README's own argument. Two links, not one: `/manual/` for anyone
+reading the README live (on the deployed app or this local server), plus a
+direct `github.com/.../docs/USER_MANUAL.md` link for anyone reading
+`README.md` as a plain file on GitHub, since an absolute path like
+`/manual/` only resolves against whatever site is currently serving the
+page it's written on — it would 404 against github.com.
+Tested: `spec/invariants.test.ts` gained a second heading-order check
+(same technique as its existing `/readme/` test) confirming `/manual/`
+actually serves `docs/USER_MANUAL.md`'s content, not a stale copy or a 404.
+
 ## Open / not yet decided
 
 - Mechanism 2 from decision 9 (push a new field to some users, widen if

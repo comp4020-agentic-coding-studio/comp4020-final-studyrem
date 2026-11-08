@@ -59,3 +59,25 @@ it("publishes README.md at /readme/", async () => {
     from = at + normalise(heading).length;
   }
 });
+
+// Not one of the two course-mandated checks above, but the same shape: the
+// README links /manual/ so the teaching team can find it, so it has to
+// actually serve docs/USER_MANUAL.md, not 404.
+it("publishes docs/USER_MANUAL.md at /manual/", async () => {
+  const expected = headings(readFileSync("docs/USER_MANUAL.md", "utf8"));
+  expect(expected, "docs/USER_MANUAL.md has no headings to check /manual/ against").not.toEqual([]);
+
+  const res = await fetch(new URL("/manual/", baseUrl));
+  expect(res.status).toBe(200);
+  const served = normalise(text(await res.text()));
+
+  let from = 0;
+  for (const heading of expected) {
+    const at = served.indexOf(normalise(heading), from);
+    expect(
+      at,
+      `/manual/ is missing the user manual heading "${heading}" (or has it out of order)`,
+    ).not.toBe(-1);
+    from = at + normalise(heading).length;
+  }
+});

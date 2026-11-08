@@ -67,3 +67,9 @@ a dorm floor did for free was.
 - Amber Case / Mark Weiser's **calm technology**: the suggestion sits at
   the edge of attention, not demanding a response; the weekly cap is that
   restraint made concrete.
+
+---
+
+[User manual](/manual/) — what you can actually do on each page, published
+live alongside this README. Reading this on GitHub instead: the source is
+[`docs/USER_MANUAL.md`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/blob/main/docs/USER_MANUAL.md).

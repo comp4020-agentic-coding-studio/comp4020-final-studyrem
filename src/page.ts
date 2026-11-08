@@ -762,3 +762,7 @@ export function renderNotFound(): string {
 export function renderReadme(bodyHtml: string): string {
   return layout("About &mdash; Commonplace", `${bodyHtml}\n<p><a href="/">&larr; Back</a></p>`);
 }
+
+export function renderManual(bodyHtml: string): string {
+  return layout("User manual &mdash; Commonplace", `${bodyHtml}\n<p><a href="/readme/">&larr; Back</a></p>`);
+}

@@ -25,7 +25,15 @@ import {
 } from "./data.ts";
 import type { User } from "./data.ts";
 import { notifyFieldsChanged, subscribeMutualView, subscribeOwnView } from "./live.ts";
-import { renderLogin, renderMutualProfile, renderNotFound, renderOwner, renderReadme, renderSearch } from "./page.ts";
+import {
+  renderLogin,
+  renderManual,
+  renderMutualProfile,
+  renderNotFound,
+  renderOwner,
+  renderReadme,
+  renderSearch,
+} from "./page.ts";
 import type { SearchRow } from "./page.ts";
 import { clearedCookie, sessionCookie, sessionPayload } from "./session.ts";
 
@@ -315,6 +323,11 @@ const server = createServer((req, res) => {
       if (method === "GET" && path === "/readme/") {
         const bodyHtml = await marked.parse(readFileSync("README.md", "utf8"));
         return html(res, 200, renderReadme(bodyHtml));
+      }
+
+      if (method === "GET" && path === "/manual/") {
+        const bodyHtml = await marked.parse(readFileSync("docs/USER_MANUAL.md", "utf8"));
+        return html(res, 200, renderManual(bodyHtml));
       }
 
       res.writeHead(404, { "Content-Type": "text/plain" });
