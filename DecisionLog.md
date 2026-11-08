@@ -109,16 +109,16 @@ anonymized.**
 Context: two mechanisms were proposed. Mechanism 1 (this one) and
 Mechanism 2 (push a new field to some users, widen if most adopt it —
 a staged/viral rollout).
-Why mechanism 2 was rejected: solves an adoption-at-scale problem that
-doesn't exist at the actual target scale (a dozen-ish people), adds real
-state-machine complexity (what counts as "some," what threshold is "most"),
-and is a growth-optimizing mechanic that sits oddly against every other
-restraint-favoring decision in this design. "We chose not to build a
-virality mechanism because this is for a dozen people, not a platform" is
-the stated justification, not a cop-out.
-Why the cap and anonymization: a resurfacing or attributed suggestion
-amounts to "someone specific was just looking at you," which risks the
-same stress the app exists to avoid.
+**Correction (made later, in a separate session): this entry previously
+said Mechanism 2 was rejected on scale grounds ("a dozen-ish people, not a
+platform"). That's wrong — the user explicitly rejected that framing.
+Mechanism 2 was never actually decided against; it was set aside because
+no workable balance was found between pushing a field onto users and
+merely hinting at one. It belongs with the open/unresolved items below,
+not as a closed decision, and is moved there now.**
+Why the cap and anonymization (Mechanism 1, as built): a resurfacing or
+attributed suggestion amounts to "someone specific was just looking at
+you," which risks the same stress the app exists to avoid.
 
 **10. Field-name collision handling: autocomplete existing field titles
 while typing a new one (the pattern many customer-service/blog sites use).**
@@ -923,6 +923,15 @@ Not changed: the dialog's own content/mechanism (decision 36), `/search`'s
 unrelated dropdown-and-Add row (decision 37), or any route/request
 handling — this pass is layout and typography only.
 
+## Open / not yet decided
+
+- Mechanism 2 from decision 9 (push a new field to some users, widen if
+  most adopt it) — not rejected, despite how an earlier version of this
+  entry read. Set aside because no workable balance was found between
+  *pushing* a field onto users and just *hinting* at one, not because of
+  scale. Revisit if a concrete version of that balance gets designed;
+  Mechanism 1 (the per-encounter suggestion, decision 26) remains what's
+  actually built in the meantime.
 - `GET /fields/suggest` (decision 21) lets any logged-in user learn a
   title's existence and holder-count without holding it themselves —
   confirmed by the same audit (querying a single/double-letter prefix
