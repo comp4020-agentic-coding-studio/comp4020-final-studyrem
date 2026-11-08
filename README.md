@@ -1,106 +1,72 @@
 # Commonplace (working title — not locked in yet)
 
-Take Priya. She tried a profile app once — not even a romantic one — and
-deleted it inside a week. It wasn't that she had nothing to put on it. It
-was that the moment it went live, she was visible to anyone who opened the
-link, performing an introduction to people who hadn't shown her anything
-back, for as long as the profile stayed up. Being looked at before anyone
-had earned it was the cost, not the writing.
+Take Priya. She deleted a profile app inside a week — not for lack of
+things to say, but because going live made her visible to anyone who
+opened the link, performing an introduction to people who'd shown her
+nothing back. Being looked at before anyone had earned it was the cost.
 
-She's three weeks into a job in a city where she doesn't know anyone yet,
-and the old ways of meeting people haven't been replacing themselves.
-University supplied that without trying — a dorm floor, a seminar, the same
-five people in the same lab twice a week. A workplace doesn't, and
-"so what do you do for fun?" from someone she just met there asks for an
-answer before either of them has actually said anything real yet.
+Three weeks into a job in a new city, the old ways of meeting people —
+a dorm floor, a seminar — haven't been replaced by anything a workplace
+supplies for free.
 
-So here: Priya adds "co-op games" as a field — not posted, not sent to
-anyone, just named. She picked it because showing up to actually do something
-with someone has always felt easier than having to produce things to say
-about herself first. Nothing happens until someone else has written their
-own "co-op games" field. Only then can either of them see what the other
-wrote there, and only there. The field does what the hallway used to do —
-puts her in the same small, named room as someone else without requiring
-either of them to perform an opening line — and neither of them was visible
-to the other until both already were.
+So here: Priya adds "co-op games" as a field, not posted or sent to
+anyone, just named. Nothing happens until someone else has written the
+same field; only then can either see what the other wrote — doing what the
+hallway used to do, without either being visible until both already were.
 
-## What it does
-
-Most profile pages show the same thing to everyone who opens them. This one
-doesn't: what you see of someone depends on what you've already chosen to
-disclose about yourself. It's built for people who find unscripted small
-talk, or the sudden exposure of a typical profile or feed, to be the actual
-cost of meeting someone — framed around social anxiety broadly, not as a
-clinical claim about any specific diagnosis, which none of us are qualified
-to make.
+Built for people who find unscripted small talk, or a typical profile's
+sudden exposure, the actual cost of meeting someone — framed around social
+anxiety broadly, not a clinical claim.
 
 ## What good means here
 
-**Nobody is ever exposed to someone else's attention without having opted in
-first.** Every design decision below exists to serve that one sentence, not
-as an unrelated pile of safety features. The test is Priya's situation above:
-would this feature let someone see her, or let her see someone else, before
-both had put in the same field themselves? If a feature needs "yes" to work,
-that's not a detail to settle in code — see "This project's rules" in
-`CLAUDE.md`.
+**Nobody is ever exposed to someone else's attention without having opted
+in first.** Every decision below serves that sentence. The test: would
+this let Priya be seen, or see someone, before both had put in the same
+field? If a feature needs "yes" to work, that's written down, not settled
+silently in code — see `CLAUDE.md`.
 
-That the rule holds mechanically is enforced and checked (below); whether it
-accomplishes what it's for — a connection that doesn't feel like exposure —
-is judged, not tested, and admitted as such further down.
+**Enforced** (checked by `spec/`): a viewer sees content only if they hold
+that field themselves; no browse page, feed, or listing — only a direct
+link or a search scoped to a field you hold; no suggestion resurfaces more
+than once a week.
 
-**What's enforced** (checked by `spec/`, not just argued):
+**Judged, not tested:** whether an anonymous suggestion reads as calm, not
+unsettling; whether a shared-topic connection feels different from being
+matched as a person (we believe it does, untested beyond ourselves);
+whether the social-anxiety framing honours the audience or borrows its
+legitimacy.
 
-- A viewer sees a field's content only if they've added that field
-  themselves — the same rule whether they're looking at a profile directly
-  or searching inside a field.
-- There is no browse page, no feed, no listing of profiles. The only ways in
-  are a direct link, or a search scoped to a field you already hold.
-- A given field suggestion doesn't resurface to the same person more than
-  once in seven days.
+## What we chose not to build
 
-**What's judged, not tested:**
+No feed, no browse page, no "people you might like." We considered it —
+showing a profile before you'd shown anything felt like the shortcut a
+growing platform reaches for. But person-first discovery means being
+matched as a person, the exact unsolicited-attention problem this app
+exists to avoid. The only ways in stay direct: a link, or a search scoped
+to a field you already hold.
 
-- Whether an anonymous "someone has a field like yours" suggestion actually
-  reads as calm rather than unsettling — that's a tone call a test can't
-  make.
-- Whether reaching someone through a shared topic genuinely feels different
-  from being matched or recommended as a person, to someone who came here
-  specifically to avoid that feeling. We believe it does. We haven't tested
-  it on anyone but ourselves yet.
-- Whether framing this around social anxiety, rather than small talk in
-  general, honours the audience or just borrows its legitimacy. We're
-  watching for the difference.
-
-(Current build status — what's actually shipped vs. not yet — is tracked as
-working notes outside this repo, not here.)
+We also don't push a field onto people or let one spread virally through
+adoption — not rejected on principle, set aside: we haven't found a
+version that stays a hint, not a nudge. What's built surfaces only when
+you're already viewing a mutual connection, capped weekly, never telling
+them they were shown. Growth was never the point; giving people back what
+a dorm floor did for free was.
 
 ## What shaped this
 
-- Jourard's **"dyadic effect"** (self-disclosure reciprocity) and Altman &
-  Taylor's **social penetration theory** — why mutual disclosure
-  specifically, not just any field-matching, is the thing doing the work.
-  Disclosure that isn't reciprocated stalls connection, and the reciprocity
-  norm matters more between strangers than people with existing history —
-  which is exactly who this app is for.
-- Helen Nissenbaum's **contextual integrity** — privacy isn't secrecy, it's
-  information flowing appropriately to its context. The mutual-field gate
-  borrows that framing rather than implementing it literally: there's no
-  pre-existing norm being matched here, just a new transmission principle —
-  a field only flows to someone who already holds it — built in the same
-  spirit.
-- Festinger, Schachter & Back's **propinquity effect**, and the broader
-  research on the adult "friendship recession" — diagnoses why Priya's
-  problem isn't a personality trait: losing the unplanned, repeated contact
-  (a dorm floor, a seminar) that used to make friendship effortless. This
-  app doesn't try to manufacture that repetition; a shared field is a
-  different fix for the same gap, not a substitute for it.
-- Research framing sustained, visible-by-default self-presentation as its
-  own form of emotional labor (dating-app burnout studies) — why the
-  mutual-field gate sits in front of content being shown at all, rather than
-  acting as a moderation layer after the fact.
-- Amber Case / Mark Weiser's **calm technology** — the suggestion mechanism
-  is designed to sit at the edge of attention, not demand a response; the
-  7-day no-resurface cap is the concrete expression of that restraint.
+- Jourard's **dyadic effect** and Altman & Taylor's **social penetration
+  theory**: unreciprocated disclosure stalls connection; reciprocity
+  matters most between strangers — who this is for.
+- Helen Nissenbaum's **contextual integrity**: privacy as information
+  flowing appropriately to context, not secrecy. A field flows only to
+  someone who already holds it — same spirit, a new principle.
+- Festinger, Schachter & Back's **propinquity effect** — the research
+  behind Priya's opening paragraph: losing unplanned, repeated contact,
+  not a personality trait.
+- Amber Case / Mark Weiser's **calm technology**: the suggestion sits at
+  the edge of attention, not demanding a response; the weekly cap is that
+  restraint made concrete.
 
 ---
 *First draft, written before most of it was built. Expected to be wrong in
