@@ -67,7 +67,3 @@ a dorm floor did for free was.
 - Amber Case / Mark Weiser's **calm technology**: the suggestion sits at
   the edge of attention, not demanding a response; the weekly cap is that
   restraint made concrete.
-
----
-*First draft, written before most of it was built. Expected to be wrong in
-places by the next crit — that's what the `/ship` tags are for.*
