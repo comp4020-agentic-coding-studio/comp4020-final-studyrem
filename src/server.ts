@@ -20,7 +20,9 @@ import {
   recordSuggestionShown,
   removeField,
   searchFields,
+  setPendingSuggestion,
   suggestField,
+  takePendingSuggestion,
   verifyPassword,
 } from "./data.ts";
 import type { User } from "./data.ts";
@@ -148,10 +150,18 @@ const server = createServer((req, res) => {
             truncated: "That was added, but trimmed to fit the length limits.",
           }[url.searchParams.get("error") ?? url.searchParams.get("notice") ?? ""];
           const isError = url.searchParams.has("error");
+          const suggestion = takePendingSuggestion(user.id);
           return html(
             res,
             200,
-            renderOwner(user.username, loadFields(user.id), profileUrl(req, user.username), message, isError),
+            renderOwner(
+              user.username,
+              loadFields(user.id),
+              profileUrl(req, user.username),
+              message,
+              isError,
+              suggestion,
+            ),
           );
         }
 
@@ -301,12 +311,14 @@ const server = createServer((req, res) => {
           viewerId: viewer.id,
           viewerUsername: viewer.username,
         });
-        // Decision 9: computed from this specific encounter, but the owner
-        // is never named in what gets logged about it — only the viewer who
-        // saw it and the title shown, never which profile prompted it.
+        // Decision 9: computed from this specific encounter, but never shown
+        // here — it's queued for the viewer's own /me instead, so the owner
+        // is never named as its source (only the viewer and the title ever
+        // appear in what gets logged about it).
         const suggestion = suggestField(owner.id, viewer.id);
         if (suggestion) {
           recordSuggestionShown(viewer.id, suggestion.title);
+          setPendingSuggestion(viewer.id, suggestion.title);
           audit("suggestion_shown", {
             viewerId: viewer.id,
             viewerUsername: viewer.username,
@@ -316,7 +328,7 @@ const server = createServer((req, res) => {
         return html(
           res,
           200,
-          renderMutualProfile(viewer.username, owner.username, mutualFields(owner.id, viewer.id), suggestion),
+          renderMutualProfile(viewer.username, owner.username, mutualFields(owner.id, viewer.id)),
         );
       }
 

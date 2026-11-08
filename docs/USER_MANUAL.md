@@ -26,6 +26,14 @@ manage your own fields.
 - **Remove a field**: deletes it immediately, no confirmation.
 - Changes you make here show up live in any other tab you have open on
   your own profile, no reload needed.
+- Occasionally, near the top of the page, you'll see a hint suggesting a
+  field title: someone whose profile you share a field with also holds a
+  field you don't. It never says who — just the title — and the same
+  suggestion won't reappear for a week. Right now it appears as soon as you
+  next load `/me` after an encounter that produces one, which is only this
+  way to make it testable; the intended design is for it to surface at a
+  server-chosen, less immediate moment rather than deterministically on the
+  very next load.
 - Your profile's shareable link is shown at the bottom of the page.
 
 ## Visiting someone's profile (`/u/<username>`)
@@ -34,10 +42,6 @@ Open a link someone's given you. You only ever see the fields you *both*
 hold — if you don't have a field they do, it simply isn't shown, not
 teased or partially revealed. If they later add or edit a field you can
 see, it updates live on your screen without a reload.
-
-Occasionally you'll see a hint suggesting a field title the other person
-has that you don't — it never says who gave you the idea, and the same
-suggestion won't reappear for a week.
 
 ## Search (`/search`)
 

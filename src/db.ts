@@ -53,3 +53,14 @@ db.exec(`
 `);
 
 db.exec("CREATE INDEX IF NOT EXISTS idx_suggestions_shown_viewer ON suggestions_shown(viewer_id);");
+
+// One pending suggestion per viewer, computed while they're viewing a
+// mutual profile but only ever shown to them on their own /me — never on
+// the profile that prompted it, so the owner is never shown as the source.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pending_suggestions (
+    viewer_id TEXT PRIMARY KEY REFERENCES users(id),
+    title TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+`);

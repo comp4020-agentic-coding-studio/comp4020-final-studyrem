@@ -373,7 +373,16 @@ export function renderOwner(
   profileUrl: string,
   message?: string,
   isError = false,
+  suggestion?: Suggestion,
 ): string {
+  const suggestionBlock = suggestion
+    ? `<p class="suggestion">Someone you share a field with has a field you don't: <strong>${escapeHtml(suggestion.title)}</strong>.
+<form method="post" action="/me/fields">
+  <input type="hidden" name="title" value="${escapeHtml(suggestion.title)}" />
+  <label>What you want to say <input name="content" required maxlength="2000" /></label>
+  <button type="submit">Add it</button>
+</form></p>`
+    : "";
   const items = fields
     .map((f) =>
       fieldItem(
@@ -400,6 +409,7 @@ export function renderOwner(
     `${siteNav(username)}
 <h1>Your profile</h1>
 ${messageBlock}
+${suggestionBlock}
 <datalist id="title-suggestions"></datalist>
 <p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>No fields yet &mdash; add the first one.</p>
 <ul id="fields">
@@ -560,26 +570,12 @@ ${items}
 // (data.ts: mutualFields) — decision 3, enforced server-side. The list is
 // server-rendered so it works without JS; the script then keeps it current
 // from the event stream, writing user text only through textContent.
-export function renderMutualProfile(
-  viewerUsername: string,
-  username: string,
-  fields: Field[],
-  suggestion?: Suggestion,
-): string {
+export function renderMutualProfile(viewerUsername: string, username: string, fields: Field[]): string {
   const items = fields.map((f) => fieldItem(f)).join("\n");
-  const suggestionBlock = suggestion
-    ? `<p class="suggestion">${escapeHtml(username)} has a field you don't: <strong>${escapeHtml(suggestion.title)}</strong>.
-<form method="post" action="/me/fields">
-  <input type="hidden" name="title" value="${escapeHtml(suggestion.title)}" />
-  <label>What you want to say <input name="content" required maxlength="2000" /></label>
-  <button type="submit">Add it</button>
-</form></p>`
-    : "";
   return layout(
     `${escapeHtml(username)} — Commonplace`,
     `${siteNav(viewerUsername)}
 <h1>${escapeHtml(username)}</h1>
-${suggestionBlock}
 <p class="empty" id="empty-note"${fields.length > 0 ? ' hidden=""' : ""}>You don't share any fields with ${escapeHtml(username)} yet — add a field they also have to see it.</p>
 <ul id="fields">
 ${items}

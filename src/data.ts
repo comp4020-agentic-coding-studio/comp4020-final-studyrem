@@ -265,6 +265,29 @@ export function recordSuggestionShown(viewerId: string, title: string): void {
   ).run(viewerId, title);
 }
 
+// A suggestion is computed from a specific encounter (viewing owner's
+// profile) but only ever surfaced to the viewer later, on their own /me —
+// never on the profile that prompted it, so the owner is never shown as its
+// source. One slot per viewer: a fresh encounter replaces whatever was
+// pending, rather than queuing them.
+export function setPendingSuggestion(viewerId: string, title: string): void {
+  db.prepare(
+    `INSERT INTO pending_suggestions (viewer_id, title, created_at) VALUES (?, ?, datetime('now'))
+     ON CONFLICT (viewer_id) DO UPDATE SET title = excluded.title, created_at = excluded.created_at`,
+  ).run(viewerId, title);
+}
+
+// Reads and clears this viewer's pending suggestion in one call — shown at
+// most once, on the /me view that consumes it.
+export function takePendingSuggestion(viewerId: string): Suggestion | undefined {
+  const row = db.prepare("SELECT title FROM pending_suggestions WHERE viewer_id = ?").get(viewerId) as
+    | { title: string }
+    | undefined;
+  if (!row) return undefined;
+  db.prepare("DELETE FROM pending_suggestions WHERE viewer_id = ?").run(viewerId);
+  return { title: row.title };
+}
+
 export interface SearchCriterion {
   title: string;
   query: string;
