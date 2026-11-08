@@ -66,7 +66,7 @@ dressed up afterward. The rule was extended again — before a citation is
 trusted, run it past a fresh subagent with no README context and see what
 it proposes independently; agreement is reassuring, a blank or different
 answer is the actual signal
-([`78c4e97`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/78c4e97)).
+([`011c41d`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-studyrem/commit/011c41d)).
 The same shape then showed up outside the app entirely, while researching
 for `research-note.md`: a statistic was fabricated, attributed to a real
 paper that didn't contain it, and survived several re-reads before a
