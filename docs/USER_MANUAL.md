@@ -64,3 +64,17 @@ Server logs record that an action happened (who did what, and a field's
 *title*) but never a field's *content* or your password. Nobody running
 this app can read what you or anyone else actually wrote to each other
 from the logs alone.
+
+Every logged action is written twice: to stdout (for watching it live —
+`flyctl logs -a <app>`) and to a durable `audit_log` table on the same
+SQLite volume everything else is stored on, so it survives a machine stop,
+restart, or redeploy, not just whatever's still in the terminal.
+
+To read it back:
+
+- **Locally**: `pnpm audit-log` (most recent 50 events). Narrow with
+  `--event <name>` (e.g. `--event field_search`) and `--limit <n>`.
+- **On the deployed app**: run the same script against the live volume over
+  SSH — `fly ssh console -a <app> -C "node scripts/audit-log.ts"`, or add
+  flags inside that same quoted command, e.g. `"node scripts/audit-log.ts
+  --event field_search --limit 20"`.

@@ -54,6 +54,24 @@ db.exec(`
 
 db.exec("CREATE INDEX IF NOT EXISTS idx_suggestions_shown_viewer ON suggestions_shown(viewer_id);");
 
+// Durable copy of every audit() call (src/audit.ts) — stdout alone doesn't
+// outlive a machine stop/restart or a redeploy, and crit 10's spec asks for
+// logging that does. Lives on the same Fly volume as the rest of the data,
+// so no new infrastructure. `fields` is the same JSON a log line's
+// key=value pairs come from, kept as one column rather than one per field
+// so new event types never need a schema change.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    event TEXT NOT NULL,
+    fields TEXT NOT NULL
+  );
+`);
+
+db.exec("CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at);");
+db.exec("CREATE INDEX IF NOT EXISTS idx_audit_log_event ON audit_log(event);");
+
 // One pending suggestion per viewer, computed while they're viewing a
 // mutual profile but only ever shown to them on their own /me — never on
 // the profile that prompted it, so the owner is never shown as the source.

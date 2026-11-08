@@ -950,6 +950,24 @@ Tested: `spec/invariants.test.ts` gained a second heading-order check
 (same technique as its existing `/readme/` test) confirming `/manual/`
 actually serves `docs/USER_MANUAL.md`'s content, not a stale copy or a 404.
 
+**41. Audit log (decision 19) also written to a durable `audit_log` table
+on the same SQLite volume, not just stdout.**
+Context: crit 10's spec line is explicit that server-side logging
+"outlives the crit" — `flyctl logs` alone doesn't guarantee that: stdout
+isn't retained across a machine stop/restart or a redeploy, only `/data`
+(the volume) is. Caught auditing against the spec, not reported as a bug.
+What changed: `audit()` (`src/audit.ts`) still prints to stdout (for
+watching it live) but now also inserts one row per call into a new
+`audit_log` table (`id, created_at, event, fields` — `fields` is the same
+key/value payload as a JSON blob, so new event types never need a schema
+change). A new `scripts/audit-log.ts` (`pnpm audit-log`, `--event`,
+`--limit`) reads it back as plain text, both locally and against the
+deployed volume over `fly ssh console`. Documented in
+`docs/USER_MANUAL.md`.
+Scope: this only changes *where* the log is kept — what gets logged, and
+the content/password exclusions decision 19 already settled, are
+unchanged.
+
 ## Open / not yet decided
 
 - Mechanism 2 from decision 9 (push a new field to some users, widen if
