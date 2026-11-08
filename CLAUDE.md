@@ -56,3 +56,12 @@ tonight's design discussion:
   this reason: real essays, confidently placed, that never did any work for
   this app's specific argument. Recognizing the genre a project belongs to
   is not the same as checking a citation against its claim.
+  A connecting sentence is not proof the connection is real — it reads the
+  same whether the citation was chosen for its argument or just dressed up
+  after the fact (same shape as the audit-self-report problem rule 5 exists
+  for). Before a citation is treated as settled, run it past a fresh
+  subagent with no README context, asked to list what it would cite for
+  this app's actual mechanic — not to argue for or against the existing
+  choice. Heavy independent overlap is reassuring; a blank or different
+  answer is the actual signal, the same way shitao's riff8 was the only
+  reason Sloan/Balkan ever surfaced.
