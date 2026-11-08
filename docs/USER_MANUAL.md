@@ -43,6 +43,37 @@ hold — if you don't have a field they do, it simply isn't shown, not
 teased or partially revealed. If they later add or edit a field you can
 see, it updates live on your screen without a reload.
 
+## Managing your account (`/me/account`)
+
+Linked next to the logout button. Two things live here, and both require
+re-entering your current password first, since either one changes how your
+account can be accessed:
+
+- **Change password.**
+- **Security questions**, used to recover your account if you forget your
+  password — there's no email on file to reset it through otherwise. Pick 3
+  different questions from a fixed list and answer each; re-submitting all 3
+  later replaces whatever was there before. **An account that's never set
+  these up can't be recovered if its password is forgotten** — that
+  includes every account created before this feature existed, until it
+  opts in here.
+
+Changing your password — directly here, or via a recovery reset below —
+logs out every other session on the account at once, the same as a normal
+logout.
+
+## Forgetting your password (`/forgot-password`)
+
+Linked from the login page. Enter your username; if that account has
+security questions set up, you'll be asked them next, then given a new
+password. If it doesn't — or the username doesn't exist at all — you'll see
+the exact same generic message either way, so this page can't be used to
+check which usernames are registered.
+
+Answers aren't case- or whitespace-sensitive ("Rex" and " rex " both work),
+unlike your password, and are never shown back to you once saved — they're
+stored the same way your password is, not as plain text.
+
 ## Search (`/search`)
 
 Find other people through fields you already hold — there's no browse

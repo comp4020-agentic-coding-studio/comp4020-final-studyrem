@@ -12,22 +12,34 @@ import {
   bumpSessionVersion,
   createUser,
   DUMMY_PASSWORD_HASH,
+  DUMMY_SECURITY_QUESTIONS,
   findUserById,
   findUserByUsername,
+  hasSecurityQuestions,
   loadFields,
+  loadSecurityQuestions,
   matchingTitles,
+  MIN_PASSWORD_LENGTH,
   mutualFields,
   recordSuggestionShown,
   removeField,
   searchFields,
+  SECURITY_ANSWER_MIN_LENGTH,
+  SECURITY_QUESTION_CHOICES,
   setPendingSuggestion,
+  setSecurityQuestions,
   suggestField,
   takePendingSuggestion,
+  updatePassword,
   verifyPassword,
+  verifySecurityAnswers,
 } from "./data.ts";
 import type { User } from "./data.ts";
 import { notifyFieldsChanged, subscribeMutualView, subscribeOwnView } from "./live.ts";
 import {
+  renderAccount,
+  renderForgotPassword,
+  renderForgotPasswordQuestions,
   renderLogin,
   renderManual,
   renderMutualProfile,
@@ -92,7 +104,11 @@ const server = createServer((req, res) => {
 
       if (method === "GET" && path === "/") {
         if (currentUser(req)) return redirect(res, "/me");
-        return html(res, 200, renderLogin());
+        const notice =
+          url.searchParams.get("notice") === "password-reset"
+            ? "Your password was reset. Log in with your new one."
+            : undefined;
+        return html(res, 200, renderLogin(undefined, "login", notice));
       }
 
       if (method === "POST" && (path === "/signup" || path === "/login")) {
@@ -129,6 +145,87 @@ const server = createServer((req, res) => {
           audit("logout", { userId: user.id, username: user.username });
         }
         return redirect(res, "/", clearedCookie(req));
+      }
+
+      // Password recovery: there's no email to verify a reset through, so
+      // this only works for an account that opted into security questions
+      // (decision: old accounts, and anyone who hasn't set these up, simply
+      // can't recover — stated plainly in renderForgotPassword, not hidden).
+      // Step 1 only ever shows one generic message, whatever the actual
+      // reason recovery can't proceed — nonexistent username and
+      // exists-but-no-questions-set-up read identically, so this page can't
+      // be used to probe which usernames are registered.
+      const NO_RECOVERY_MESSAGE =
+        "If that account exists and has security questions set up, you'll see them next. Otherwise, there's nothing more this page can do — recovery only works for accounts that opted in.";
+
+      if (method === "GET" && path === "/forgot-password") {
+        return html(res, 200, renderForgotPassword());
+      }
+
+      if (method === "POST" && path === "/forgot-password") {
+        const params = new URLSearchParams(await readBody(req));
+        const username = (params.get("username") ?? "").trim();
+        const user = findUserByUsername(username);
+        const questions = user ? loadSecurityQuestions(user.id) : [];
+        if (!user || questions.length !== 3) {
+          audit("password_reset_requested", { username, outcome: "no-recovery-available" });
+          return html(res, 200, renderForgotPassword(NO_RECOVERY_MESSAGE));
+        }
+        audit("password_reset_requested", { username, outcome: "questions-shown" });
+        return html(
+          res,
+          200,
+          renderForgotPasswordQuestions(
+            user.username,
+            questions.map((q) => q.question),
+          ),
+        );
+      }
+
+      if (method === "POST" && path === "/forgot-password/reset") {
+        const params = new URLSearchParams(await readBody(req));
+        const username = (params.get("username") ?? "").trim();
+        const newPassword = params.get("new_password") ?? "";
+        const user = findUserByUsername(username);
+        const stored = user ? loadSecurityQuestions(user.id) : [];
+        // No real questions to answer — shouldn't happen via the normal
+        // step 1 → step 2 flow, but reachable by posting here directly.
+        // Falls back to the same generic step-1 message rather than
+        // rendering a fake question form. `stored` only has 3 rows when
+        // `user` exists (loadSecurityQuestions is only ever called just
+        // above, guarded by `user ?`), so `user` is defined from here on.
+        if (!user || stored.length !== 3) {
+          audit("password_reset_failed", { username });
+          return html(res, 200, renderForgotPassword(NO_RECOVERY_MESSAGE));
+        }
+        // Always verifies all 3 answers, correct account or not, so this
+        // path doesn't resolve measurably faster for a wrong answer than a
+        // right one — the same timing discipline as DUMMY_PASSWORD_HASH.
+        const answers = [0, 1, 2].map((i) => params.get(`answer-${i}`) ?? "");
+        const answersCorrect = verifySecurityAnswers(stored, answers);
+        if (!answersCorrect || newPassword.length < MIN_PASSWORD_LENGTH) {
+          audit("password_reset_failed", { username });
+          const message =
+            newPassword.length > 0 && newPassword.length < MIN_PASSWORD_LENGTH
+              ? `New passwords need at least ${MIN_PASSWORD_LENGTH} characters.`
+              : "One or more answers didn't match. Try again.";
+          return html(
+            res,
+            200,
+            renderForgotPasswordQuestions(
+              username,
+              stored.map((q) => q.question),
+              message,
+            ),
+          );
+        }
+        updatePassword(user.id, newPassword);
+        // Same reasoning as a normal password change: logs out every
+        // existing session, since a credential just changed through a
+        // weaker-assurance channel than a real login.
+        bumpSessionVersion(user.id);
+        audit("password_reset", { userId: user.id, username: user.username });
+        return redirect(res, "/?notice=password-reset");
       }
 
       if (path === "/me" || path.startsWith("/me/")) {
@@ -218,6 +315,70 @@ const server = createServer((req, res) => {
           notifyFieldsChanged(user.id);
           audit("field_removed", { userId: user.id, username: user.username, title });
           return redirect(res, "/me");
+        }
+
+        if (method === "GET" && path === "/me/account") {
+          const message = {
+            "wrong-password": "That current password isn't right — nothing was changed.",
+            "password-too-short": `New passwords need at least ${MIN_PASSWORD_LENGTH} characters.`,
+            "invalid-questions": "Choose 3 different questions and answer each with at least 2 characters.",
+            "password-changed": "Your password was changed.",
+            "questions-saved": "Your security questions were saved.",
+          }[url.searchParams.get("error") ?? url.searchParams.get("notice") ?? ""];
+          const isError = url.searchParams.has("error");
+          const questions = loadSecurityQuestions(user.id).map((q) => q.question);
+          return html(res, 200, renderAccount(user.username, questions, message, isError));
+        }
+
+        if (method === "POST" && path === "/me/account/password") {
+          const params = new URLSearchParams(await readBody(req));
+          const currentPassword = params.get("current_password") ?? "";
+          const newPassword = params.get("new_password") ?? "";
+          if (!verifyPassword(user.passwordHash, currentPassword)) {
+            audit("password_change_failed", { userId: user.id, username: user.username });
+            return redirect(res, "/me/account?error=wrong-password");
+          }
+          if (newPassword.length < MIN_PASSWORD_LENGTH) {
+            return redirect(res, "/me/account?error=password-too-short");
+          }
+          updatePassword(user.id, newPassword);
+          // A password change is at least as sensitive as a logout (decision
+          // 22) — every other session for this account stops working
+          // immediately, same as /logout.
+          bumpSessionVersion(user.id);
+          audit("password_changed", { userId: user.id, username: user.username });
+          return redirect(
+            res,
+            "/me/account?notice=password-changed",
+            sessionCookie(req, user.id, user.sessionVersion + 1),
+          );
+        }
+
+        if (method === "POST" && path === "/me/account/security-questions") {
+          const params = new URLSearchParams(await readBody(req));
+          const currentPassword = params.get("current_password") ?? "";
+          if (!verifyPassword(user.passwordHash, currentPassword)) {
+            audit("security_questions_update_failed", { userId: user.id, username: user.username });
+            return redirect(res, "/me/account?error=wrong-password");
+          }
+          const qas = [0, 1, 2].map((i) => ({
+            question: (params.get(`question-${i}`) ?? "").trim(),
+            answer: params.get(`answer-${i}`) ?? "",
+          }));
+          const valid =
+            qas.every((qa) => (SECURITY_QUESTION_CHOICES as readonly string[]).includes(qa.question)) &&
+            new Set(qas.map((qa) => qa.question)).size === 3 &&
+            qas.every((qa) => qa.answer.trim().length >= SECURITY_ANSWER_MIN_LENGTH);
+          if (!valid) {
+            return redirect(res, "/me/account?error=invalid-questions");
+          }
+          setSecurityQuestions(user.id, qas);
+          // Logged as a bare "set up or changed," never which questions or
+          // answers — those are exactly as sensitive as the password they
+          // exist to recover, so decision 19's content-never-logged rule
+          // applies here too.
+          audit("security_questions_updated", { userId: user.id, username: user.username });
+          return redirect(res, "/me/account?notice=questions-saved");
         }
       }
 

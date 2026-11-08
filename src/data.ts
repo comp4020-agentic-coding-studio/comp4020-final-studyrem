@@ -59,7 +59,10 @@ const toField = (row: FieldRow): Field => ({
   createdAt: row.created_at,
 });
 
-function hashPassword(password: string): string {
+// Exported too: security-question answers (below) are hashed with this same
+// scheme — an answer is a credential, not a label, so it gets the same
+// protection against a leaked database that a password does.
+export function hashPassword(password: string): string {
   const salt = randomBytes(16);
   return `scrypt:${salt.toString("hex")}:${scryptSync(password, salt, 64).toString("hex")}`;
 }
@@ -149,6 +152,15 @@ export function bumpSessionVersion(userId: string): void {
   db.prepare("UPDATE users SET session_version = session_version + 1 WHERE id = ?").run(userId);
 }
 
+// Used for both a normal (logged-in) password change and a security-question
+// recovery reset — either way, a credential just changed through some path,
+// so the caller is expected to bump session_version right alongside this
+// (decision 22's reasoning extended: a password reset is at least as
+// sensitive as a logout).
+export function updatePassword(userId: string, password: string): void {
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(password), userId);
+}
+
 export function loadFields(userId: string): Field[] {
   const rows = db
     .prepare("SELECT * FROM fields WHERE user_id = ? ORDER BY created_at")
@@ -225,6 +237,93 @@ export function matchingTitles(prefix: string, limit = 8): TitleSuggestion[] {
     )
     .all(escaped, limit) as unknown as TitleSuggestion[];
   return rows;
+}
+
+// Password recovery, since there's no email to verify a reset through. A
+// fixed list, not freeform questions: consistent wording across every
+// account, and nobody can pick a question that's trivially guessable for
+// them specifically. Exactly 3 of these, chosen by the user, make up an
+// account's recovery set (see SecurityQuestions below).
+export const SECURITY_QUESTION_CHOICES = [
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What was your childhood nickname?",
+  "What is your mother's maiden name?",
+  "What was the make of your first car?",
+  "What elementary school did you attend?",
+] as const;
+
+export const SECURITY_ANSWER_MIN_LENGTH = 2;
+
+// Same role as DUMMY_PASSWORD_HASH: 3 rows to compare against when the
+// username doesn't exist or has no recovery set up, so that path still does
+// 3 real scrypt compares rather than returning instantly.
+export const DUMMY_SECURITY_QUESTIONS: SecurityQuestionRow[] = SECURITY_QUESTION_CHOICES.slice(0, 3).map(
+  (question) => ({ question, answerHash: hashPassword("not a real answer, just a timing decoy") }),
+);
+
+export interface SecurityQuestionRow {
+  question: string;
+  answerHash: string;
+}
+
+// Normalizing before hashing (trim + lowercase) is deliberate and different
+// from password handling: a password is typed the same way twice by the
+// same person, but a recalled answer isn't — "Fluffy" vs "fluffy " shouldn't
+// silently fail a reset the way a mistyped password correctly would.
+function normalizeAnswer(answer: string): string {
+  return answer.trim().toLowerCase();
+}
+
+// Whether userId has a recovery set at all — old accounts, and any account
+// that hasn't opted in yet, have none. This is the one check that decides
+// whether /forgot-password can do anything for a given username.
+export function hasSecurityQuestions(userId: string): boolean {
+  const row = db.prepare("SELECT COUNT(*) AS n FROM security_questions WHERE user_id = ?").get(userId) as {
+    n: number;
+  };
+  return row.n === 3;
+}
+
+// The questions (never the answers) a user has already set, in position
+// order — for rendering the "manage my account" form pre-filled, and for
+// rendering the actual recovery prompts on /forgot-password.
+export function loadSecurityQuestions(userId: string): SecurityQuestionRow[] {
+  const rows = db
+    .prepare("SELECT question, answer_hash AS answerHash FROM security_questions WHERE user_id = ? ORDER BY position")
+    .all(userId) as unknown as SecurityQuestionRow[];
+  return rows;
+}
+
+// Replaces all 3 at once — there's no partial update; setting up or
+// changing recovery always means re-answering all three, which keeps
+// "do all 3 answers match" unambiguous at reset time (no stale leftover
+// question from a previous setup).
+export function setSecurityQuestions(userId: string, qas: { question: string; answer: string }[]): void {
+  db.exec("BEGIN");
+  try {
+    db.prepare("DELETE FROM security_questions WHERE user_id = ?").run(userId);
+    qas.forEach(({ question, answer }, i) => {
+      db.prepare(
+        "INSERT INTO security_questions (user_id, position, question, answer_hash) VALUES (?, ?, ?, ?)",
+      ).run(userId, i + 1, question, hashPassword(normalizeAnswer(answer)));
+    });
+    db.exec("COMMIT");
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+}
+
+// Every answer must match its own question, in order. Deliberately never
+// short-circuits on the first mismatch (no .every()/early return before all
+// 3 compares run) — same timing discipline as DUMMY_PASSWORD_HASH, so
+// getting question 1 right and 2 wrong doesn't take measurably longer than
+// getting all 3 wrong.
+export function verifySecurityAnswers(rows: SecurityQuestionRow[], answers: string[]): boolean {
+  if (rows.length !== 3 || answers.length !== 3) return false;
+  const results = rows.map((row, i) => verifyPassword(row.answerHash, normalizeAnswer(answers[i] ?? "")));
+  return results.every(Boolean);
 }
 
 export interface Suggestion {

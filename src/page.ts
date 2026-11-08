@@ -1,5 +1,6 @@
 // HTML templating. No framework: a handful of pages, each a template literal.
 import type { Field, SearchResult, Suggestion } from "./data.ts";
+import { SECURITY_QUESTION_CHOICES } from "./data.ts";
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -310,6 +311,7 @@ function siteNav(username: string): string {
 <a href="/me">Your profile</a>
 <a href="/search">Search</a>
 <a href="/readme/">What good means for this app</a>
+<a href="/me/account">Manage my account</a>
 <form class="inline" method="post" action="/logout">Logged in as <strong>${escapeHtml(username)}</strong> <button type="submit">Log out</button></form>
 </div>
 </nav>`;
@@ -335,22 +337,31 @@ ${body}
 
 // `errorOn` says which form the message belongs to, so a failed signup
 // reopens the signup disclosure with its own error rather than surfacing a
-// signup problem next to the login form (or vice versa).
-export function renderLogin(error?: string, errorOn: "login" | "signup" = "login"): string {
+// signup problem next to the login form (or vice versa). `notice` is
+// separate from `error` — currently only used for "your password was reset,
+// log in with the new one," which isn't an error on either form.
+export function renderLogin(
+  error?: string,
+  errorOn: "login" | "signup" = "login",
+  notice?: string,
+): string {
   const loginError = error && errorOn === "login" ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
   const signupError = error && errorOn === "signup" ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
+  const noticeBlock = notice ? `<p class="notice" role="status">${escapeHtml(notice)}</p>` : "";
   return layout(
     "Commonplace",
     `<h1>Commonplace</h1>
 <p>A profile is a set of fields: a title, and whatever you want to say about
 it. Log in to edit yours.</p>
 <hr class="rule" />
+${noticeBlock}
 ${loginError}
 <form method="post" action="/login">
   <label>Username <input name="username" required autocomplete="username" /></label>
   <label>Password <input name="password" type="password" required autocomplete="current-password" /></label>
   <button type="submit">Log in</button>
 </form>
+<p><a href="/forgot-password">Forgot your password?</a></p>
 <details class="signup"${errorOn === "signup" ? " open" : ""}>
   <summary>New here? Create an account</summary>
   ${signupError}
@@ -753,6 +764,106 @@ ${resultsBlock}
 
 export function renderNotFound(): string {
   return layout("Not found — Commonplace", `<h1>Not found</h1><p>Nobody's at this link.</p>`);
+}
+
+// Both the password-change and security-question forms require re-entering
+// the current password (checked server-side) — both change how this
+// account can be accessed, so both get the same guard.
+export function renderAccount(
+  username: string,
+  questions: string[],
+  message?: string,
+  isError = false,
+): string {
+  const messageBlock = message
+    ? `<p class="${isError ? "error" : "notice"}" role="alert">${escapeHtml(message)}</p>`
+    : "";
+  const hasQuestions = questions.length === 3;
+  const questionOptions = (selected?: string): string =>
+    SECURITY_QUESTION_CHOICES.map(
+      (q) => `<option value="${escapeHtml(q)}"${q === selected ? " selected" : ""}>${escapeHtml(q)}</option>`,
+    ).join("\n");
+  const questionRows = [0, 1, 2]
+    .map(
+      (i) => `<label>Question ${i + 1}
+    <select name="question-${i}" required>
+      <option value="" disabled${questions[i] ? "" : " selected"}>Choose a question&hellip;</option>
+      ${questionOptions(questions[i])}
+    </select>
+  </label>
+  <label>Answer <input name="answer-${i}" type="password" required minlength="2" autocomplete="off" /></label>`,
+    )
+    .join("\n");
+  return layout(
+    "Manage my account — Commonplace",
+    `${siteNav(username)}
+<h1>Manage my account</h1>
+${messageBlock}
+<h2>Change password</h2>
+<form method="post" action="/me/account/password">
+  <label>Current password <input name="current_password" type="password" required autocomplete="current-password" /></label>
+  <label>New password (at least 8 characters) <input name="new_password" type="password" required minlength="8" autocomplete="new-password" /></label>
+  <button type="submit">Change password</button>
+</form>
+<hr class="rule" />
+<h2>Security questions</h2>
+<p>Used to recover your account if you forget your password &mdash; there's no
+email on file to reset it through otherwise. ${
+      hasQuestions
+        ? "Yours are set up; re-answering all three below replaces them."
+        : "Not set up yet &mdash; until they are, a forgotten password can't be recovered."
+    }</p>
+<form method="post" action="/me/account/security-questions">
+  <label>Current password <input name="current_password" type="password" required autocomplete="current-password" /></label>
+  ${questionRows}
+  <button type="submit">${hasQuestions ? "Update" : "Set up"} security questions</button>
+</form>`,
+  );
+}
+
+// Step 1 of recovery: just a username. Kept separate from the result so the
+// same generic non-committal message (decision: never say which of
+// "doesn't exist" / "exists but has no recovery set up" is true) can be
+// shown without the username field needing to repopulate anything.
+export function renderForgotPassword(error?: string): string {
+  const errorBlock = error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
+  return layout(
+    "Forgot password — Commonplace",
+    `<h1>Forgot your password?</h1>
+<p>If your account has security questions set up, you'll be asked them next.
+There's no email on file, so this is the only recovery path &mdash; an account
+that never set questions up can't be recovered.</p>
+${errorBlock}
+<form method="post" action="/forgot-password">
+  <label>Username <input name="username" required autocomplete="username" /></label>
+  <button type="submit">Continue</button>
+</form>
+<p><a href="/">&larr; Back to log in</a></p>`,
+  );
+}
+
+// Step 2: only reached when the username matched and has all 3 questions
+// set up (server.ts redirects back to step 1 with the same generic message
+// otherwise) — so this always has real questions to show, never a
+// decoy/dummy set. `username` travels as a hidden field rather than in the
+// URL so it isn't the one thing left exposed in a browser history entry.
+export function renderForgotPasswordQuestions(username: string, questions: string[], error?: string): string {
+  const errorBlock = error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
+  const rows = questions
+    .map((q, i) => `<label>${escapeHtml(q)} <input name="answer-${i}" type="password" required autocomplete="off" /></label>`)
+    .join("\n");
+  return layout(
+    "Forgot password — Commonplace",
+    `<h1>Answer your security questions</h1>
+${errorBlock}
+<form method="post" action="/forgot-password/reset">
+  <input type="hidden" name="username" value="${escapeHtml(username)}" />
+  ${rows}
+  <label>New password (at least 8 characters) <input name="new_password" type="password" required minlength="8" autocomplete="new-password" /></label>
+  <button type="submit">Reset password</button>
+</form>
+<p><a href="/">&larr; Back to log in</a></p>`,
+  );
 }
 
 export function renderReadme(bodyHtml: string): string {

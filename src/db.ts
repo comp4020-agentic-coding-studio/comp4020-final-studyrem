@@ -82,3 +82,21 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 `);
+
+// Password recovery (no email verification exists to recover through, so
+// this is the only self-serve path): exactly 3 rows per user who's opted
+// in, one per question position. An account with zero rows here simply has
+// no recovery set up — no separate flag needed, and it's why an account
+// created before this feature existed can't recover until it sets these up.
+// answer_hash uses the exact same scrypt+salt scheme as password_hash
+// (hashPassword/verifyPassword in data.ts) — an answer is a credential, not
+// a label, so it gets the same protection against a leaked database.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS security_questions (
+    user_id TEXT NOT NULL REFERENCES users(id),
+    position INTEGER NOT NULL CHECK (position IN (1, 2, 3)),
+    question TEXT NOT NULL,
+    answer_hash TEXT NOT NULL,
+    PRIMARY KEY (user_id, position)
+  );
+`);

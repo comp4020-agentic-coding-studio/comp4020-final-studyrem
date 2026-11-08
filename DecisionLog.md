@@ -974,6 +974,66 @@ the image (the same omission decision 40 already hit once for `docs/`) —
 `node scripts/audit-log.ts` would have 404'd with `MODULE_NOT_FOUND` on the
 deployed machine despite working locally. Added `COPY scripts ./scripts`.
 
+**42. Password recovery: a fixed set of 3 security questions per account,
+answered to reset a forgotten password. Old accounts, and any account that
+hasn't opted in, simply can't recover.**
+Context: raised directly — there's no email on file (decision: no
+verification step at signup, kept deliberately light), so a forgotten
+password previously had no recovery path at all.
+Why security questions over the alternatives: email verification would
+need an email provider, a dependency this app has avoided everywhere else
+(decision 12); a magic admin override doesn't scale past a solo-author demo
+and creates a standing backdoor. Security questions are the one
+recovery mechanism that needs no new infrastructure and no email address —
+the "old school way," explicitly the user's own call, accepting the
+well-known weaknesses of that approach (guessable or publicly-findable
+answers) as the trade-off for not needing email at all.
+Why a fixed list of 6 questions, not freeform: consistent wording across
+every account, and nobody can invent a question that's trivially guessable
+for them specifically (`SECURITY_QUESTION_CHOICES`, `src/data.ts`). A user
+picks 3 distinct ones.
+Why old accounts can't recover until they opt in: there's no migration or
+default — `security_questions` (`src/db.ts`) only ever has rows for an
+account that explicitly set them up (`hasSecurityQuestions` checks for
+exactly 3 rows), so this falls out of the schema rather than needing a
+flag. Stated plainly on `/forgot-password` itself, not hidden.
+Answers are credentials, not labels: hashed with the exact same
+scrypt+salt scheme as a password (`hashPassword`/`verifyPassword`, reused
+directly), after trimming and lowercasing first — unlike a password, a
+recalled answer isn't typed the same way twice by the same person, so
+"Rex" and " rex " should both work where a password doing that would be a
+bug. Never echoed back once saved (`/me/account` shows only the question
+text, never the stored answer).
+Where it lives: `GET/POST /me/account` ("Manage my account," linked next
+to logout) handles both a direct password change and setting up/replacing
+all 3 questions at once — both require re-entering the current password,
+since both change how the account can be accessed. `/forgot-password` →
+`/forgot-password/reset` is the actual recovery flow for a logged-out user.
+The one accepted limitation, stated rather than hidden: reaching the
+question-prompt page at all necessarily confirms "this username is a real
+account with recovery enabled" — there's no way to avoid that without an
+email channel this app doesn't have. What's actually protected: step 1
+(`POST /forgot-password`) never distinguishes a nonexistent username from
+a real one with no questions set up — both get the identical generic
+message, so simply trying a username can't be used to enumerate accounts.
+The same timing discipline as `DUMMY_PASSWORD_HASH`/decision 24 extends
+here: `DUMMY_SECURITY_QUESTIONS` gives 3 real scrypt compares to run against
+even when the account doesn't exist or has no real questions, and
+`verifySecurityAnswers` never short-circuits before checking all 3.
+A successful reset bumps `session_version` exactly like decision 22's
+logout-everywhere — a credential just changed through a weaker-assurance
+channel (3 memorized answers) than a normal login, so every existing
+session is treated as potentially compromised, same as decision 22's own
+reasoning for a direct password change.
+Tested: `spec/recovery.test.ts` — no-recovery-set-up gives the generic
+message (not a real question); that message is byte-identical for a
+nonexistent username vs. a real one with no questions; both account-page
+forms require the current password; questions render in order once set up;
+answers never echo back; normalization (trim/case) works while a genuinely
+wrong answer still fails; both a recovery reset and a direct password
+change invalidate every other session; 3 distinct questions are enforced.
+Documented in `docs/USER_MANUAL.md`.
+
 ## Open / not yet decided
 
 - Mechanism 2 from decision 9 (push a new field to some users, widen if
