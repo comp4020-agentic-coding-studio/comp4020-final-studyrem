@@ -1034,6 +1034,35 @@ wrong answer still fails; both a recovery reset and a direct password
 change invalidate every other session; 3 distinct questions are enforced.
 Documented in `docs/USER_MANUAL.md`.
 
+**43. Settled the app's name: "Commonplace," dropping the "working
+title — not locked in yet" hedge. Added a one-sentence description before
+the user story.**
+Context: raised directly after noticing the README still read as
+provisional — the parenthetical had been sitting unchanged since crit 8,
+and nothing about it was ever revisited once the design actually settled.
+With the final project due, an unresolved-sounding name read as an
+oversight, not a real open question.
+Why "Commonplace" rather than inventing something new: the name was never
+actually in contention — nothing in `DecisionLog.md` or `notes/` records a
+rejected alternative — the hedge was leftover caution from early on, not a
+live decision. Kept as-is rather than spending the final pass on a new
+name with no stronger claim to it.
+What changed: `# Commonplace (working title — not locked in yet)` →
+`# Commonplace`, with a new one-sentence description directly under the
+title ("A profile board where a field becomes visible to someone else only
+once they've added it themselves.") so a reader gets what the app actually
+is before the narrative, not only after reading all of Priya's story. The
+story itself is now under its own `## Priya's story` heading rather than
+following the H1 with no heading of its own.
+Trimmed elsewhere to make room, staying inside the 400–600 word cap: a few
+redundant phrases cut from "What good means here," "What we chose not to
+build," and the calm-technology citation — none of them dropped a claim,
+only a restated clause.
+Tested: `spec/invariants.test.ts`'s existing `/readme/` heading-order check
+already covers this — it reads `README.md`'s actual headings (now
+including "Priya's story") and confirms each appears, in order, on the
+served page.
+
 ## Open / not yet decided
 
 - Mechanism 2 from decision 9 (push a new field to some users, widen if
@@ -1050,5 +1079,3 @@ Documented in `docs/USER_MANUAL.md`.
   content or usernames). Left as-is for now (probably intentional — it's
   literally how you discover what to type — but not an explicit call when
   decision 21 was made).
-- The app's actual name (`README.md` still says "Commonplace, working
-  title").

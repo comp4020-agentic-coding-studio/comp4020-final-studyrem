@@ -1,4 +1,9 @@
-# Commonplace (working title — not locked in yet)
+# Commonplace
+
+A profile board where a field becomes visible to someone else only once
+they've added it themselves.
+
+## Priya's story
 
 Take Priya. She deleted a profile app inside a week — not for lack of
 things to say, but because going live made her visible to anyone who
@@ -14,17 +19,17 @@ anyone, just named. Nothing happens until someone else has written the
 same field; only then can either see what the other wrote — doing what the
 hallway used to do, without either being visible until both already were.
 
-Built for people who find unscripted small talk, or a typical profile's
-sudden exposure, the actual cost of meeting someone — framed around social
-anxiety broadly, not a clinical claim.
+Built for people who find unscripted small talk, or a profile's sudden
+exposure, the real cost of meeting someone — social anxiety broadly, not a
+clinical claim.
 
 ## What good means here
 
 **Nobody is ever exposed to someone else's attention without having opted
-in first.** Every decision below serves that sentence. The test: would
-this let Priya be seen, or see someone, before both had put in the same
-field? If a feature needs "yes" to work, that's written down, not settled
-silently in code — see `CLAUDE.md`.
+in first.** Every decision below serves that sentence: would it let Priya
+be seen, or see someone, before both had put in the same field? If a
+feature needs "yes" to work, that's written down, not settled silently in
+code — see `CLAUDE.md`.
 
 **Enforced** (checked by `spec/`): a viewer sees content only if they hold
 that field themselves; no browse page, feed, or listing — only a direct
@@ -40,11 +45,11 @@ legitimacy.
 ## What we chose not to build
 
 No feed, no browse page, no "people you might like." We considered it —
-showing a profile before you'd shown anything felt like the shortcut a
-growing platform reaches for. But person-first discovery means being
-matched as a person, the exact unsolicited-attention problem this app
-exists to avoid. The only ways in stay direct: a link, or a search scoped
-to a field you already hold.
+showing a profile before you'd shown anything felt like a growing
+platform's shortcut. But person-first discovery means being matched as a
+person, the exact unsolicited-attention problem this app exists to avoid.
+The only ways in stay direct: a link, or a search scoped to a field you
+already hold.
 
 We also don't push a field onto people or let one spread virally through
 adoption — not rejected on principle, set aside: we haven't found a
@@ -65,8 +70,7 @@ a dorm floor did for free was.
   behind Priya's opening paragraph: losing unplanned, repeated contact,
   not a personality trait.
 - Amber Case / Mark Weiser's **calm technology**: the suggestion sits at
-  the edge of attention, not demanding a response; the weekly cap is that
-  restraint made concrete.
+  the edge of attention; the weekly cap is that restraint made concrete.
 
 ---
 
